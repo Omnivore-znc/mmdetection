@@ -591,7 +591,9 @@ class MinIoURandomCrop(object):
         img, boxes, labels = [
             results[k] for k in ('img', 'gt_bboxes', 'gt_labels')
         ]
+        #h, w, c = img.data.shape
         h, w, c = img.shape
+
         while True:
             mode = random.choice(self.sample_mode)
             if mode == 1:
