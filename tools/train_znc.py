@@ -1,7 +1,7 @@
 from __future__ import division
 import argparse
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 
 import torch
 from mmcv import Config
