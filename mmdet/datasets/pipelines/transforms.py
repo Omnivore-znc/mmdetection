@@ -1,6 +1,8 @@
 import inspect
 
 import albumentations
+import cv2
+
 import mmcv
 import numpy as np
 from albumentations import Compose
@@ -149,12 +151,21 @@ class Resize(object):
                 ]
             results[key] = masks
 
+    def _resize_points(self, results):
+        img_shape = results['img_shape']
+        for key in results.get('point_fields', []):
+            points = results[key] * results['scale_factor'][0:2]
+            points[:, 0] = np.clip(points[:, 0], 0, img_shape[1] - 1)
+            points[:, 1] = np.clip(points[:, 1], 0, img_shape[0] - 1)
+            results[key] = points
+
     def __call__(self, results):
         if 'scale' not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
+        self._resize_points(results)
         return results
 
     def __repr__(self):
@@ -198,6 +209,19 @@ class RandomFlip(object):
         flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
         return flipped
 
+    def point_flip(self, points, img_shape):
+        """Flip bboxes horizontally.
+
+        Args:
+            bboxes(ndarray): shape (..., 4*k)
+            img_shape(tuple): (height, width)
+        """
+        assert points.shape[-1] % 2 == 0
+        w = img_shape[1]
+        flipped = points.copy()
+        flipped[..., 0::2] = w - points[..., 0::2] - 1
+        return flipped
+
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
@@ -212,6 +236,11 @@ class RandomFlip(object):
             # flip masks
             for key in results.get('mask_fields', []):
                 results[key] = [mask[:, ::-1] for mask in results[key]]
+
+            # flip points
+            for key in results.get('point_fields', []):
+                results[key] = self.point_flip(results[key],
+                                              results['img_shape'])
         return results
 
     def __repr__(self):
@@ -486,7 +515,9 @@ class PhotoMetricDistortion(object):
         if random.randint(2):
             img = img[..., random.permutation(3)]
 
-        results['img'] = img
+        #cv2.imwrite("haha.jpg",img)
+
+        #results['img'] = img
         return results
 
     def __repr__(self):

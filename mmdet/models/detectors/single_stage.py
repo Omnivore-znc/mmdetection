@@ -25,7 +25,8 @@ class SingleStageDetector(BaseDetector):
         self.backbone = builder.build_backbone(backbone)
         if neck is not None:
             self.neck = builder.build_neck(neck)
-        self.bbox_head = builder.build_head(bbox_head)
+        if bbox_head is not None:
+            self.bbox_head = builder.build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
@@ -39,7 +40,8 @@ class SingleStageDetector(BaseDetector):
                     m.init_weights()
             else:
                 self.neck.init_weights()
-        self.bbox_head.init_weights()
+        if self.with_bbox:
+            self.bbox_head.init_weights()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck
