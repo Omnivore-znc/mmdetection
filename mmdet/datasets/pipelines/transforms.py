@@ -1,5 +1,7 @@
 import inspect
 
+import sys
+
 import albumentations
 import cv2
 
@@ -166,6 +168,16 @@ class Resize(object):
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_points(results)
+
+        # # todo-znc
+        # print(sys._getframe())
+        # #print(sys._getframe().f_lineno )
+        # img = np.array( results['img'], results['img'].dtype)
+        # for i in range(len(results['gt_points'])):
+        #     center = results['gt_points'][i].astype(np.int)
+        #     cv2.circle(img,(center[0],center[1]),2,(0,0,255))
+        # cv2.imwrite("haha.jpg",img)
+
         return results
 
     def __repr__(self):
@@ -514,8 +526,6 @@ class PhotoMetricDistortion(object):
         # randomly swap channels
         if random.randint(2):
             img = img[..., random.permutation(3)]
-
-        #cv2.imwrite("haha.jpg",img)
 
         #results['img'] = img
         return results

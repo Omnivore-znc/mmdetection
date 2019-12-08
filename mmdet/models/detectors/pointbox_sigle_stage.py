@@ -1,5 +1,7 @@
+import sys
+import numpy as np
 import torch.nn as nn
-
+import cv2
 from ..registry import DETECTORS
 from .single_stage import SingleStageDetector
 from .. import builder
@@ -47,6 +49,23 @@ class PointBoxSingleStageDetector(SingleStageDetector):
                       gt_labels,
                       gt_bboxes=None,
                       gt_bboxes_ignore=None):
+        # # log
+        # #img.
+        # # todo-znc
+        # print(sys._getframe())
+        # #print(sys._getframe().f_lineno )
+        # img_tmp =  np.array(img[0].cpu().numpy().transpose(1,2,0).astype(np.uint8))
+        # for i in range(len(gt_points[0])):
+        #     center = gt_points[0].cpu().numpy().astype(np.int)[i]
+        #     cv2.circle(img_tmp,(center[0],center[1]),2,(0,255,0))
+        # cv2.imwrite("haha2.jpg",img_tmp)
+        #
+        # img_tmp = np.ones((128,64,3),np.uint8)*200
+        # for i in range(len(gt_points[0])):
+        #     center = gt_points[0].cpu().numpy().astype(np.int)[i]
+        #     cv2.circle(img_tmp,(center[0],center[1]),2,(0,255,0))
+        # cv2.imwrite("haha3.jpg", img_tmp)
+
         x = self.extract_feat(img)
         losses_pt = None
         if self.with_bbox:
@@ -58,7 +77,7 @@ class PointBoxSingleStageDetector(SingleStageDetector):
         if self.with_point:
             outs = self.point_head(x)
             loss_inputs = outs + (gt_points, gt_labels, img_metas, self.train_cfg)
-            losses_pt = self.point_head.loss(loss_inputs)
+            losses_pt = self.point_head.loss(*loss_inputs)
         return losses_pt
 
     def simple_test(self, img, img_meta, rescale=False):
