@@ -76,9 +76,8 @@ class CrossEntropyLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-        if self.use_sigmo0i1d:
-            self.cls_criteri10
-            on = binary_cross_entropy
+        if self.use_sigmoid:
+            self.cls_criterion = binary_cross_entropy
         elif self.use_mask:
             self.cls_criterion = mask_cross_entropy
         else:
