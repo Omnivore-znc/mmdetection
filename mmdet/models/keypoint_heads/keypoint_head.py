@@ -46,12 +46,16 @@ class KeypointHead(nn.Module):
     def forward(self, x):
         x = x.view(x.size(0), -1)
         #print('BlazeFace ouput size = {}'.format(h.size()))
+        cls_preds = []
+        reg_preds = []
         cls_pred = self.fc_cls(x)
+        cls_preds.append(cls_pred)
         reg_pred = self.fc_reg(x)
-        return cls_pred, reg_pred
+        reg_preds.append(reg_pred)
+        return cls_preds, reg_preds
 
     def loss_single(self, cls_score, point_pred, labels, label_weights,
-                    point_targets, point_weights, num_total_samples, cfg):
+                    point_targets, point_weights, num_total_cls, num_total_points, cfg):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # pos_inds = (labels > 0).nonzero().view(-1)
@@ -64,14 +68,14 @@ class KeypointHead(nn.Module):
         # topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         # loss_cls_pos = loss_cls_all[pos_inds].sum()
         # loss_cls_neg = topk_loss_cls_neg.sum()
-        loss_cls = loss_cls_all.sum()/ num_total_samples
+        loss_cls = loss_cls_all.sum()/ num_total_cls
 
         loss_point = smooth_l1_loss(
             point_pred,
             point_targets,
             point_weights,
             beta=cfg.smoothl1_beta,
-            avg_factor=num_total_samples)
+            avg_factor=num_total_points)
         return (loss_cls, loss_point)
 
     def loss(self,
@@ -90,7 +94,7 @@ class KeypointHead(nn.Module):
         ], 1)
         all_labels = torch.cat(gt_labels, -1).view(num_images, -1)
         all_label_weights = torch.tensor(all_labels)
-        all_label_weights[all_label_weights>0]=1
+        all_label_weights[...] = 1
 
         all_point_preds = torch.cat([
             b.reshape(num_images, -1, 2) for b in point_preds
@@ -106,11 +110,15 @@ class KeypointHead(nn.Module):
         all_point_targets = torch.cat(all_point_targets, -2).view(num_images, -1, 2)
         # point weight
         all_point_weights = torch.tensor(all_point_targets)
-        all_point_weights[all_label_weights==0,:] = 0
-        all_point_weights[all_label_weights>0, :] = 1
+        all_label_weights_tmp = torch.tensor(all_labels)
+        all_label_weights_tmp[all_label_weights_tmp > 0] = 1
+        all_label_weights_tmp[all_label_weights_tmp < 0] = 0
+        all_point_weights[all_label_weights_tmp==0,:] = 0
+        all_point_weights[all_label_weights_tmp>0, :] = 1
         #all_point_weights =
 
-        num_total_pos = torch.sum(all_label_weights>0)
+        num_total_cls = torch.sum(all_label_weights)
+        num_total_points = torch.sum(all_label_weights_tmp>0)
         (losses_cls, losses_point) = multi_apply(
             self.loss_single,
             all_cls_scores,
@@ -119,7 +127,8 @@ class KeypointHead(nn.Module):
             all_label_weights,
             all_point_targets,
             all_point_weights,
-            num_total_samples=num_total_pos,
+            num_total_cls=num_total_cls,
+            num_total_points=num_total_points,
             cfg=cfg)
         return dict(loss_cls=losses_cls, loss_point=losses_point)
 

@@ -26,16 +26,32 @@ class TXTDataset(CustomDataset):
             img_w = 0
             img_h = 0
             with open(ann_path) as annfile:
+                # while 1:
+                #     wh = annfile.readline()
+                #     if len(wh.split(' ')) != 2:
+                #         continue
+                num_keypt = 0
                 while 1:
-                    wh = annfile.readline()
-                    if len(wh.split(' ')) != 2:
-                        continue
-                    img_w = int(wh.split(' ')[0])
-                    img_h = int(wh.split(' ')[1])
-                    assert img_w > 0 and img_w < 2000 and img_h > 0 and img_h < 2000
-                    break
+                    num = annfile.readline().split(' ')
+                    if len(num) == 2:
+                        img_w = int(num[0])
+                        img_h = int(num[1])
+                        assert img_w > 0 and img_w < 2000 and img_h > 0 and img_h < 2000
+                    if len(num) == 1:
+                        num = num[0]
+                        if int(num) > 0 and int(num) < 500:
+                            num_keypt = int(num)
+                            break
+                if num_keypt == 0:
+                    raise "keypoint num invalid in file {}".format(ann_path)
+                num_keypt_valid = 0
+                while 1:
+                    num = annfile.readline()
+                    if int(num) >= 0 and int(num) < 100:
+                        num_keypt_valid = int(num)
+                        break
             img_infos.append(
-                dict(id=img_id, filename=filename, width=img_w, height=img_h))
+                dict(id=img_id, filename=filename, width=img_w, height=img_h, num_keypt_valid=num_keypt_valid))
         return img_infos
 
     def get_ann_info(self, idx):
@@ -98,6 +114,8 @@ class TXTDataset(CustomDataset):
         """Filter images too small."""
         valid_inds = []
         for i, img_info in enumerate(self.img_infos):
-            if min(img_info['width'], img_info['height']) >= min_size:
+            if min(img_info['width'], img_info['height']) >= min_size and img_info['num_keypt_valid']>=2:
                 valid_inds.append(i)
+            #else:
+                #print('not enough valid keypoints: {}'.format(img_info['filename']))
         return valid_inds
