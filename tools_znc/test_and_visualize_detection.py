@@ -50,9 +50,9 @@ def runit1(model_config, weights, image_dir, image_list, out_dir):
                 return
 
 if __name__=='__main__':
-    model_config = '../configs/ga_faster_r50_caffe_fpn_1x_head.py'
-    model_weight = '../../mmdet_models/work_dirs/ga_faster_rcnn_r50_caffe_fpn_1x/epoch_12.pth'
-    out_dir = '../../mmdet_models/work_dirs/ga_faster_rcnn_r50_caffe_fpn_1x'
+    model_config = '/opt/space_host/zhongnanchang/mmdet/mmdetection/configs_znc/ssd_wider_face.py'
+    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/ssd_wider_face/latest.pth'
+    out_dir = '../../../mmdet_models/work_dirs/ga_faster_rcnn_r50_caffe_fpn_1x'
 
     img_dir0 = '/opt/space_host/data_xiaozu/head_data/application-test/rentou-test-set'
     runit0(model_config, model_weight, img_dir0, out_dir)

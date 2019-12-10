@@ -18,7 +18,7 @@ model = dict(
         type='KeypointHead',
         num_classes=num_cls,
         target_means=(0.5, 0.5),
-        target_stds=(0.5, 0.5)))
+        target_stds=(0.1, 0.1)))
 # model training and testing settings
 cudnn_benchmark = True
 train_cfg = dict(
@@ -57,7 +57,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(input_height, input_width),
+        img_scale=(input_width, input_height),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=False),
@@ -74,24 +74,24 @@ data = dict(
         times=2,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-all.txt',
+        ann_file= data_root + 'idx_list-21w.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-all.txt',
+        ann_file= data_root + 'idx_list-3w.txt',
         img_prefix=data_root,
         pipeline=test_pipeline),
     #val=None,
     test=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-all.txt',
+        ann_file= data_root + 'idx_list-21w.txt',
         img_prefix=data_root,
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.016, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(

@@ -94,7 +94,13 @@ class PointBoxSingleStageDetector(SingleStageDetector):
             raise NotImplementedError
         if self.with_point:
             outs_pt = self.point_head(x)
-        return outs_pt
+            point_inputs = outs_pt + (img_meta, self.test_cfg, rescale)
+            point_list = self.point_head.get_points(*point_inputs)
+            # point_results = [
+            #     point2result(det_points, det_labels, self.point_head.num_classes)
+            #     for det_points, det_labels in point_list
+            # ]
+        return point_list
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

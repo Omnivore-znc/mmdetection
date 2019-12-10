@@ -144,3 +144,33 @@ class KeypointHead(nn.Module):
         point_targets_tmp = point_targets_tmp.sub_(target_means).div_(target_stds)
         return  (point_targets_tmp,point_targets)
 
+    def get_points(self, cls_scores, point_preds, img_metas, cfg,
+                   rescale=False):
+        point_list = []
+        for img_id in range(len(img_metas)):
+            cls_scores_one = cls_scores[img_id].reshape( -1, self.cls_out_channels)
+            point_preds_one = point_preds[img_id].reshape( -1, 2)
+            assert cls_scores_one.size()[0]==point_preds_one.size()[0]
+            if self.use_sigmoid_cls:
+                scores = cls_scores_one.sigmoid()
+                max_scores, max_idxs = scores.max(dim=1)
+            else:
+                scores = cls_scores_one.softmax(-1)
+                max_scores, max_idxs = scores.max(dim=1)
+            points_decoded = self.decode_delta_single(point_preds_one,img_metas[img_id])
+            max_idxs = max_idxs.reshape(max_idxs.size()[-1],1)
+            point_list.append(torch.cat((points_decoded,max_idxs.float()),1))
+        return  point_list
+
+    def decode_delta_single(self, deltas, img_meta):
+        points_tmp = deltas.float()
+        target_means = [self.target_means[0], self.target_means[0]]
+        target_stds = [self.target_stds[0], self.target_stds[0]]
+        target_means = points_tmp.new_tensor(target_means).unsqueeze(0)
+        target_stds = points_tmp.new_tensor(target_stds).unsqueeze(0)
+        points_tmp2 = points_tmp.mul_(target_stds).add_(target_means)
+        decoded_x = points_tmp2[:,0] * img_meta['img_shape'][1]
+        decoded_y = points_tmp2[:,1] * img_meta['img_shape'][0]
+        return  torch.stack([decoded_x, decoded_y], -1)
+
+
