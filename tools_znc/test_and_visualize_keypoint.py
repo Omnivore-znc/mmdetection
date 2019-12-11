@@ -17,7 +17,7 @@ def draw_line(img, points, idx0, idx1):
                  (int(points[idx0, 0]), int(points[idx0, 1])),
                  (int(points[idx1, 0]), int(points[idx1, 1])),
                  (0, 255, 255),
-                 1)
+                 2)
 
 def visualize_results(points, img_path, save_path):
     points_tmp = points.cpu()
@@ -25,7 +25,15 @@ def visualize_results(points, img_path, save_path):
     #img = cv2.resize(img, (64, 128))
     enlarge = 2.0
     img = cv2.resize(img, (0, 0), fx=enlarge, fy=enlarge)
-    points_tmp = points_tmp*enlarge
+    points_tmp[:,:2] = points_tmp[:,:2]*enlarge
+
+    for i in range(points_tmp.size()[0]):
+        if points_tmp[i,2]==1:
+            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 0, 255), thickness=2)
+        elif points_tmp[i,2]==2:
+            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (255, 0, 0), thickness=2)
+        elif points_tmp[i,2]!=0:
+            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 0), thickness=2)
 
     #left_ankle - left_knee
     idx_0,idx_1 = 16, 14
@@ -83,14 +91,6 @@ def visualize_results(points, img_path, save_path):
     idx_0, idx_1 = 5, 7
     draw_line(img, points_tmp, idx_0, idx_1)
 
-    for i in range(points_tmp.size()[0]):
-        if points_tmp[i,2]==1:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 0, 255), thickness=2)
-        elif points_tmp[i,2]==2:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (255, 0, 0), thickness=2)
-        elif points_tmp[i,2]!=0:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 0), thickness=2)
-
     #dir_name,file_name = os.path.split(img_path)
     #dst_path = os.path.join(save_path,file_name)
     cv2.imwrite(save_path,img)
@@ -121,7 +121,7 @@ if __name__=='__main__':
     model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint/epoch_100.pth'
     out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint'
 
-    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set'
+    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
     runit0(model_config, model_weight, img_dir0, out_dir)
 
 

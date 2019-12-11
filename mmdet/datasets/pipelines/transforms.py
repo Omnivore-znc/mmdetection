@@ -221,6 +221,12 @@ class RandomFlip(object):
         flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
         return flipped
 
+    def point_flip_one(self, points, idx_l, idx_r):
+        points_tmp = points.copy()
+        points_tmp[idx_l, :] = points[idx_r, :].copy()
+        points_tmp[idx_r, :] = points[idx_l, :].copy()
+        return  points_tmp
+
     def point_flip(self, points, img_shape):
         """Flip bboxes horizontally.
 
@@ -232,6 +238,25 @@ class RandomFlip(object):
         w = img_shape[1]
         flipped = points.copy()
         flipped[..., 0::2] = w - points[..., 0::2] - 1
+
+        if flipped.shape[0]==17:
+            idx_l, idx_r = 1, 2
+            flipped = self.point_flip_one(flipped,idx_l,idx_r)
+            idx_l, idx_r = 3, 4
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 5, 6
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 7, 8
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 9, 10
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 11, 12
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 13, 14
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 15, 16
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+
         return flipped
 
     def __call__(self, results):

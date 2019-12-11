@@ -6,8 +6,8 @@ input_width = 64
 input_height = 128
 model = dict(
     type='PointBoxSingleStageDetector',
-    #pretrained=root_dir+'mmdet_models/pretrained/vgg16_caffe-292e1171.pth',
-    pretrained=None,
+    pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
+    #pretrained=None,
     backbone=dict(
         type='BlazeFace',
         input_width=input_width,
@@ -95,15 +95,15 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.016, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=200,
+    warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[60, 90])
+    step=[24, 30, 32])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -115,10 +115,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 100
+total_epochs = 33
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912111939'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
