@@ -107,8 +107,8 @@ class BlazeFace(nn.Module):
             self.features.add_module('single_block_{}'.format(idx_single),BlazeBlock(48, 48))
             idx_single += 1
             self.features.add_module('single_block_{}'.format(idx_single),BlazeBlock(48, 48))
-            idx_single += 1
-            self.features.add_module('single_block_{}'.format(idx_single), BlazeBlock(48, 48, stride=2))
+            #idx_single += 1
+            #self.features.add_module('single_block_{}'.format(idx_single), BlazeBlock(48, 48, stride=2))
         else:
             raise "Only support 5 single blaze blocks now."
 

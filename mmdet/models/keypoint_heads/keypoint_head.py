@@ -17,8 +17,10 @@ from ..registry import HEADS
 class KeypointHead(nn.Module):
     def __init__(self,
                  num_classes,
+                 num_points,
                  # in_channels,
-                 # feat_channels=256,
+                 num_fcs=2,
+                 out_channels_fc=1024,
                  target_means=(0.5, 0.5),
                  target_stds=(1.0, 1.0),
                  loss_cls=dict(
@@ -31,6 +33,9 @@ class KeypointHead(nn.Module):
         super(KeypointHead, self).__init__()
         #self.in_channels = in_channels
         self.num_classes = num_classes
+        self.num_points = num_points
+        self.num_fcs = num_fcs
+        self.out_channels_fc = out_channels_fc
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.target_means = target_means
         self.target_stds = target_stds
@@ -38,19 +43,39 @@ class KeypointHead(nn.Module):
             self.cls_out_channels = num_classes - 1
         else:
             self.cls_out_channels = num_classes
+        self.relu = nn.ReLU(inplace=True)
 
     def build_fc(self, num_fc_pre):
-        self.fc_cls = nn.Linear(num_fc_pre, 51)
-        self.fc_reg = nn.Linear(num_fc_pre, 34)
+        self.cls_fcs = nn.ModuleList()
+        self.reg_fcs = nn.ModuleList()
+        out_fc_last = self.out_channels_fc
+        for i in range(self.num_fcs-1):
+            if i==0:
+                self.cls_fcs.append(nn.Linear(num_fc_pre, self.out_channels_fc))
+                self.reg_fcs.append(nn.Linear(num_fc_pre, self.out_channels_fc))
+                out_fc_last = self.out_channels_fc
+            else:
+                self.cls_fcs.append(nn.Linear(out_fc_last, self.out_channels_fc))
+                self.reg_fcs.append(nn.Linear(out_fc_last, self.out_channels_fc))
+                out_fc_last = self.out_channels_fc
+        self.fc_cls = nn.Linear(out_fc_last, self.num_points*self.num_classes)
+        self.fc_reg = nn.Linear(out_fc_last, self.num_points*2)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        #print('BlazeFace ouput size = {}'.format(h.size()))
+
+        x_cls = x
         cls_preds = []
-        reg_preds = []
-        cls_pred = self.fc_cls(x)
+        for fc in self.cls_fcs:
+            x_cls = self.relu(fc(x_cls))
+        cls_pred = self.fc_cls(x_cls)
         cls_preds.append(cls_pred)
-        reg_pred = self.fc_reg(x)
+
+        x_reg = x
+        reg_preds = []
+        for fc in self.reg_fcs:
+            x_reg = self.relu(fc(x_reg))
+        reg_pred = self.fc_reg(x_reg)
         reg_preds.append(reg_pred)
         return cls_preds, reg_preds
 
@@ -58,16 +83,7 @@ class KeypointHead(nn.Module):
                     point_targets, point_weights, num_total_cls, num_total_points, cfg):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
-        # pos_inds = (labels > 0).nonzero().view(-1)
-        # neg_inds = (labels == 0).nonzero().view(-1)
-        #
-        # num_pos_samples = pos_inds.size(0)
-        # num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
-        # if num_neg_samples > neg_inds.size(0):
-        #     num_neg_samples = neg_inds.size(0)
-        # topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
-        # loss_cls_pos = loss_cls_all[pos_inds].sum()
-        # loss_cls_neg = topk_loss_cls_neg.sum()
+
         loss_cls = loss_cls_all.sum()/ num_total_cls
 
         loss_point = smooth_l1_loss(
@@ -117,7 +133,8 @@ class KeypointHead(nn.Module):
         all_point_weights[all_label_weights_tmp>0, :] = 1
         #all_point_weights =
 
-        num_total_cls = torch.sum(all_label_weights)
+        #num_total_cls = torch.sum(all_label_weights)
+        num_total_cls = torch.sum(all_label_weights)/self.num_points*2
         num_total_points = torch.sum(all_label_weights_tmp>0)
         (losses_cls, losses_point) = multi_apply(
             self.loss_single,
@@ -169,8 +186,8 @@ class KeypointHead(nn.Module):
         target_means = points_tmp.new_tensor(target_means).unsqueeze(0)
         target_stds = points_tmp.new_tensor(target_stds).unsqueeze(0)
         points_tmp2 = points_tmp.mul_(target_stds).add_(target_means)
-        decoded_x = points_tmp2[:,0] * img_meta['img_shape'][1]
-        decoded_y = points_tmp2[:,1] * img_meta['img_shape'][0]
+        decoded_x = points_tmp2[:,0] * img_meta['ori_shape'][1]
+        decoded_y = points_tmp2[:,1] * img_meta['ori_shape'][0]
         return  torch.stack([decoded_x, decoded_y], -1)
 
 

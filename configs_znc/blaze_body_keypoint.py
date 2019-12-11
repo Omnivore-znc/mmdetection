@@ -1,4 +1,5 @@
 num_cls = 3
+num_points = 17
 root_dir = '/opt/space_host/zhongnanchang/'
 # model settings
 input_width = 64
@@ -17,8 +18,11 @@ model = dict(
     point_head=dict(
         type='KeypointHead',
         num_classes=num_cls,
+        num_points=num_points,
+        num_fcs=2,
+        out_channels_fc=1024,
         target_means=(0.5, 0.5),
-        target_stds=(0.1, 0.1)))
+        target_stds=(0.05, 0.05)))
 # model training and testing settings
 cudnn_benchmark = True
 train_cfg = dict(
