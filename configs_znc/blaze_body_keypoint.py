@@ -71,31 +71,31 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=128,
+    imgs_per_gpu=160,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
         times=2,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-21w.txt',
+        ann_file= data_root + 'idx_list-21w_train.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-3w.txt',
+        ann_file= data_root + 'idx_list-21w_val.txt',
         img_prefix=data_root,
         pipeline=test_pipeline),
     #val=None,
     test=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w.txt',
+        ann_file= data_root + 'idx_list-21w_val.txt',
         img_prefix=data_root,
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.016, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.05, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -103,7 +103,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[24, 30, 32])
+    step=[50, 65, 70])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -115,10 +115,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 33
+total_epochs = 75
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912111939'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912120000'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

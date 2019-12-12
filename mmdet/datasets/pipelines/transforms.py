@@ -227,7 +227,13 @@ class RandomFlip(object):
         points_tmp[idx_r, :] = points[idx_l, :].copy()
         return  points_tmp
 
-    def point_flip(self, points, img_shape):
+    def label_flip_one(self, labels, idx_l, idx_r):
+        labels_tmp = labels.copy()
+        labels_tmp[idx_l] = labels[idx_r]
+        labels_tmp[idx_r] = labels[idx_l]
+        return  labels_tmp
+
+    def point_flip(self, points, labels, img_shape):
         """Flip bboxes horizontally.
 
         Args:
@@ -236,12 +242,44 @@ class RandomFlip(object):
         """
         assert points.shape[-1] % 2 == 0
         w = img_shape[1]
-        flipped = points.copy()
-        flipped[..., 0::2] = w - points[..., 0::2] - 1
 
-        if flipped.shape[0]==17:
+        is_flipped = False
+        labels_flipped = []
+        flipped = []
+        if points.shape[0]==17 and labels is not None:
+            flipped = points.copy()
+            labels_flipped = labels.copy()
+            flipped[..., 0::2] = w - points[..., 0::2] - 1
             idx_l, idx_r = 1, 2
             flipped = self.point_flip_one(flipped,idx_l,idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped,idx_l,idx_r)
+            idx_l, idx_r = 3, 4
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 5, 6
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 7, 8
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 9, 10
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 11, 12
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 13, 14
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 15, 16
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            is_flipped = True
+        elif points.shape[0]==17 and labels is None:
+            flipped = points.copy()
+            flipped[..., 0::2] = w - points[..., 0::2] - 1
+            idx_l, idx_r = 1, 2
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
             idx_l, idx_r = 3, 4
             flipped = self.point_flip_one(flipped, idx_l, idx_r)
             idx_l, idx_r = 5, 6
@@ -257,7 +295,7 @@ class RandomFlip(object):
             idx_l, idx_r = 15, 16
             flipped = self.point_flip_one(flipped, idx_l, idx_r)
 
-        return flipped
+        return flipped, labels_flipped, is_flipped
 
     def __call__(self, results):
         if 'flip' not in results:
@@ -275,9 +313,17 @@ class RandomFlip(object):
                 results[key] = [mask[:, ::-1] for mask in results[key]]
 
             # flip points
+            is_flipped = False
             for key in results.get('point_fields', []):
-                results[key] = self.point_flip(results[key],
-                                              results['img_shape'])
+                if not is_flipped:
+                    results[key], results['gt_labels'], is_flipped = self.point_flip(results[key],
+                                                                  results['gt_labels'],
+                                                                  results['img_shape'])
+                else:
+                    results[key], _, is_flipped = self.point_flip(results[key],
+                                                                  None,
+                                                                  results['img_shape'])
+
         return results
 
     def __repr__(self):
