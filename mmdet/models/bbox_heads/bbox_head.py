@@ -156,11 +156,15 @@ class BBoxHead(nn.Module):
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
-                exp_r = int(bboxes.size()[-1]/len(scale_factor))
-                scale_factors = scale_factor
-                for i in range(exp_r-1):
-                    scale_factors = numpy.append(scale_factors,scale_factor)
-                bboxes /= torch.from_numpy(scale_factors).to(bboxes.device)
+                #exp_r = int(bboxes.size()[-1]/len(scale_factor))
+                #scale_factors = scale_factor
+                #for i in range(exp_r-1):
+                #    scale_factors = numpy.append(scale_factors,scale_factor)
+                #bboxes /= torch.from_numpy(scale_factors).to(bboxes.device)
+
+                scale_factor = torch.from_numpy(scale_factor).to(bboxes.device)
+                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
+                          scale_factor).view(bboxes.size()[0], -1)
 
         if cfg is None:
             return bboxes, scores
