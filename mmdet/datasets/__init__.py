@@ -8,11 +8,14 @@ from .registry import DATASETS
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .grid_defect_29classes import VOCDatasetGridDefect
 from .head_voc import VOCDatasetHead
+from .body_keypoint_dataset import BodyKeypointDataset
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'ConcatDataset', 'RepeatDataset', 'WIDERFaceDataset',
-    'DATASETS', 'build_dataset', 'VOCDatasetHead'
+    'DATASETS', 'build_dataset', 'VOCDatasetHead', 'VOCDatasetGridDefect',
+    'BodyKeypointDataset'
 ]

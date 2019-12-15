@@ -1,6 +1,10 @@
 import inspect
 
+import sys
+
 import albumentations
+import cv2
+
 import mmcv
 import numpy as np
 from albumentations import Compose
@@ -149,12 +153,31 @@ class Resize(object):
                 ]
             results[key] = masks
 
+    def _resize_points(self, results):
+        img_shape = results['img_shape']
+        for key in results.get('point_fields', []):
+            points = results[key] * results['scale_factor'][0:2]
+            points[:, 0] = np.clip(points[:, 0], 0, img_shape[1] - 1)
+            points[:, 1] = np.clip(points[:, 1], 0, img_shape[0] - 1)
+            results[key] = points
+
     def __call__(self, results):
         if 'scale' not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
+        self._resize_points(results)
+
+        # # todo-znc
+        # print(sys._getframe())
+        # #print(sys._getframe().f_lineno )
+        # img = np.array( results['img'], results['img'].dtype)
+        # for i in range(len(results['gt_points'])):
+        #     center = results['gt_points'][i].astype(np.int)
+        #     cv2.circle(img,(center[0],center[1]),2,(0,0,255))
+        # cv2.imwrite("haha.jpg",img)
+
         return results
 
     def __repr__(self):
@@ -208,6 +231,82 @@ class RandomFlip(object):
                 'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
+    def point_flip_one(self, points, idx_l, idx_r):
+        points_tmp = points.copy()
+        points_tmp[idx_l, :] = points[idx_r, :].copy()
+        points_tmp[idx_r, :] = points[idx_l, :].copy()
+        return  points_tmp
+
+    def label_flip_one(self, labels, idx_l, idx_r):
+        labels_tmp = labels.copy()
+        labels_tmp[idx_l] = labels[idx_r]
+        labels_tmp[idx_r] = labels[idx_l]
+        return  labels_tmp
+
+    def point_flip(self, points, labels, img_shape):
+        """Flip bboxes horizontally.
+
+        Args:
+            bboxes(ndarray): shape (..., 4*k)
+            img_shape(tuple): (height, width)
+        """
+        assert points.shape[-1] % 2 == 0
+        w = img_shape[1]
+
+        is_flipped = False
+        labels_flipped = []
+        flipped = []
+        if points.shape[0]==17 and labels is not None:
+            flipped = points.copy()
+            labels_flipped = labels.copy()
+            flipped[..., 0::2] = w - points[..., 0::2] - 1
+            idx_l, idx_r = 1, 2
+            flipped = self.point_flip_one(flipped,idx_l,idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped,idx_l,idx_r)
+            idx_l, idx_r = 3, 4
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 5, 6
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 7, 8
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 9, 10
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 11, 12
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 13, 14
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            idx_l, idx_r = 15, 16
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            labels_flipped = self.label_flip_one(labels_flipped, idx_l, idx_r)
+            is_flipped = True
+        elif points.shape[0]==17 and labels is None:
+            flipped = points.copy()
+            flipped[..., 0::2] = w - points[..., 0::2] - 1
+            idx_l, idx_r = 1, 2
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 3, 4
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 5, 6
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 7, 8
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 9, 10
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 11, 12
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 13, 14
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+            idx_l, idx_r = 15, 16
+            flipped = self.point_flip_one(flipped, idx_l, idx_r)
+
+        return flipped, labels_flipped, is_flipped
+
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
@@ -229,6 +328,19 @@ class RandomFlip(object):
                     mmcv.imflip(mask, direction=results['flip_direction'])
                     for mask in results[key]
                 ]
+
+            # flip points
+            is_flipped = False
+            for key in results.get('point_fields', []):
+                if not is_flipped:
+                    results[key], results['gt_labels'], is_flipped = self.point_flip(results[key],
+                                                                  results['gt_labels'],
+                                                                  results['img_shape'])
+                else:
+                    results[key], _, is_flipped = self.point_flip(results[key],
+                                                                  None,
+                                                                  results['img_shape'])
+
         return results
 
     def __repr__(self):
@@ -503,7 +615,7 @@ class PhotoMetricDistortion(object):
         if random.randint(2):
             img = img[..., random.permutation(3)]
 
-        results['img'] = img
+        #results['img'] = img
         return results
 
     def __repr__(self):

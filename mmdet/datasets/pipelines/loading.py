@@ -38,10 +38,11 @@ class LoadImageFromFile(object):
 class LoadAnnotations(object):
 
     def __init__(self,
-                 with_bbox=True,
+                 with_bbox=False,
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
+                 with_point=False,
                  poly2mask=True,
                  skip_img_without_anno=True):
         self.with_bbox = with_bbox
@@ -49,6 +50,7 @@ class LoadAnnotations(object):
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.with_point = with_point
         self.skip_img_without_anno = skip_img_without_anno
 
     def _load_bboxes(self, results):
@@ -74,6 +76,12 @@ class LoadAnnotations(object):
 
     def _load_labels(self, results):
         results['gt_labels'] = results['ann_info']['labels']
+        return results
+
+    def _load_points(self, results):
+        results['gt_points_ignore'] = results['ann_info'].get('points_ignore', None)
+        results['gt_points'] = results['ann_info']['points']
+        results['point_fields'].extend(['gt_points','gt_points_ignore'])
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
@@ -117,6 +125,8 @@ class LoadAnnotations(object):
             results = self._load_masks(results)
         if self.with_seg:
             results = self._load_semantic_seg(results)
+        if self.with_point:
+            results = self._load_points(results)
         return results
 
     def __repr__(self):
