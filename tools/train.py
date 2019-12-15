@@ -1,7 +1,11 @@
 from __future__ import division
 import argparse
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+
+import os.path as osp
+import sys
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 
 import torch
 from mmcv import Config
@@ -15,10 +19,17 @@ from mmdet.models import build_detector
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('config', help='train config file path')
-    parser.add_argument('--work_dir', help='the dir to save logs and models')
+    # parser.add_argument('config', help='train config file path')
+    parser.add_argument('config',
+                        # default='../configs_znc/blaze_body_keypoint.py',
+                        help='train config file path')
+    parser.add_argument('--work_dir',
+                        # default='./checkpoint/work_dirs/blaze_body_keypoint/epoch_50.pth',
+                        help='the dir to save logs and models')
     parser.add_argument(
-        '--resume_from', help='the checkpoint file to resume from')
+        '--resume_from',
+        # default='./checkpoint/work_dirs/blaze_body_keypoint/epoch_50.pth',
+        help='the checkpoint file to resume from')
     parser.add_argument(
         '--validate',
         action='store_true',

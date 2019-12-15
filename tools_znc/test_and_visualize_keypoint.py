@@ -1,10 +1,10 @@
 import timeit
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import cv2
 import sys
 sys.path.append('../')
-from mmdetection.mmdet.apis import inference
+from mmdet.apis import inference
 
 img_types = ['.jpg','.jpeg','.png','.bmp']
 class_names = ['hidden','visible']
@@ -118,10 +118,10 @@ def runit0(model_config, weights, image_dir, out_dir):
 
 if __name__=='__main__':
     model_config = '../configs_znc/blaze_body_keypoint.py'
-    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint/epoch_100.pth'
-    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint'
+    model_weight = '../checkpoint/work_dirs/blaze_body_keypoint_rotate2/epoch_100.pth'
+    out_dir = '../checkpoint/work_dirs/blaze_body_keypoint_rotate2/vis_result'
 
-    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set'
+    img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
     runit0(model_config, model_weight, img_dir0, out_dir)
 
 
