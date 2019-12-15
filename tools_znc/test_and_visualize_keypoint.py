@@ -1,6 +1,6 @@
 import timeit
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 import cv2
 import sys
 sys.path.append('../')
@@ -115,13 +115,38 @@ def runit0(model_config, weights, image_dir, out_dir):
                 print('{}: {}'.format(run_num,filename))
                 if run_num<1:
                     return
+def runit1(model_config, weights, image_list, out_dir):
+    model = inference.init_detector(model_config, weights)
+    img_dir,_ = os.path.split(image_list)
+    with open(image_list) as img_file:
+        linestr = img_file.readline().strip()
+        run_num = 1000
+        while len(linestr)>2 and run_num>0:
+            img_path = os.path.join(img_dir,'IMAGE_ANNOTATIONS/'+linestr+'.jpg')
+            if not os.path.exists(img_path):
+                continue
+            start = timeit.default_timer()
+            results = inference.inference_detector(model, img_path)
+            end = timeit.default_timer()
+            print('{}'.format((end - start) * 1000))
+            out_file = os.path.join(out_dir, linestr+'.jpg')
+            # inference.show_result(img,result=results,class_names=class_names,show = False,out_file=out_file)
+            visualize_results(results[0], img_path, out_file)
+            run_num = run_num - 1
+            print('{}: {}'.format(run_num, linestr+'.jpg'))
+            if run_num < 1:
+                return
+            linestr = img_file.readline().strip()
+            run_num -= 1
 
 if __name__=='__main__':
-    model_config = '../configs_znc/blaze_body_keypoint.py'
-    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint/epoch_100.pth'
-    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint'
+    model_config = '/opt/space_host/zhongnanchang/mmdet/mmdetection/configs_znc/blaze_body_keypoint.py'
+    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912140000/epoch_150.pth'
+    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912140000/results'
+    #img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
+    #runit0(model_config, model_weight, img_dir0, out_dir)
 
-    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
-    runit0(model_config, model_weight, img_dir0, out_dir)
+    img_list = '/opt/space_host/data_xiaozu/keypoint_coco2017/idx_list-21w_train.txt'
+    runit1(model_config, model_weight, img_list, out_dir)
 
 

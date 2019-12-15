@@ -2,7 +2,7 @@ num_cls = 3
 num_points = 17
 root_dir = '/opt/space_host/zhongnanchang/'
 # model settings
-input_width = 64
+input_width = 128
 input_height = 128
 model = dict(
     type='PointBoxSingleStageDetector',
@@ -19,7 +19,7 @@ model = dict(
         type='KeypointHead',
         num_classes=num_cls,
         num_points=num_points,
-        num_fcs=2,
+        num_fcs=3,
         out_channels_fc=1024,
         target_means=(0.5, 0.5),
         target_stds=(0.05, 0.05)))
@@ -65,6 +65,7 @@ test_pipeline = [
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=False),
+            #dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
@@ -103,7 +104,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[50, 65, 70])
+    step=[100, 150, 170])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -115,10 +116,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 75
+total_epochs = 180
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912120000'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912140000'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
