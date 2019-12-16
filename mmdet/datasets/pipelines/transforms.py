@@ -451,7 +451,12 @@ class RandomCropPoint(object):
     """
 
     def __init__(self, crop_size, min_num_points, crop_ratio):
-        self.crop_size = crop_size
+
+        # random crop size
+        crop_h = np.random.randint(crop_size[0]-32, crop_size[0]+32, size=1)
+        crop_w = np.random.randint(crop_size[1]-16, crop_size[1]+16, size=1)
+
+        self.crop_size = (crop_h, crop_w)
         self.min_num_points = min_num_points
         self.crop_ratio = crop_ratio
 
