@@ -480,7 +480,8 @@ class RandomCropPoint(object):
 
             points[:, 0] = np.clip(points[:, 0], -1, img_shape[1] - 1)
             points[:, 1] = np.clip(points[:, 1], -1, img_shape[0] - 1)
-            invalid_inds = (points[:, 0]==-1) | (points[:, 1]==-1)
+            invalid_inds = (points[:, 0]==-1) | (points[:, 1]==-1) | \
+                           (points[:, 0]==img_shape[1] - 1) | (points[:, 1]==img_shape[0] - 1)
             num_invalid = np.sum(invalid_inds)
 
             if num_invalid > (points.shape[0] - self.min_num_points):

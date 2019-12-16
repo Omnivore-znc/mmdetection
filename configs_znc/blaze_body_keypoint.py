@@ -120,7 +120,7 @@ checkpoint_config = dict(interval=5)
 total_epochs = 100
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate'
+work_dir =  './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
