@@ -51,7 +51,7 @@ train_pipeline = [
     #     type='MinIoURandomCrop',
     #     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
     #     min_crop_size=0.3),
-    dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
+    dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='DefaultFormatBundle'),
@@ -64,7 +64,7 @@ test_pipeline = [
         img_scale=(input_width, input_height),
         flip=False,
         transforms=[
-            dict(type='Resize', keep_ratio=False),
+            dict(type='Resize', keep_ratio=True),
             #dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
