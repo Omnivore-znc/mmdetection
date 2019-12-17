@@ -156,7 +156,7 @@ class Resize(object):
     def _resize_points(self, results):
         img_shape = results['img_shape']
         for key in results.get('point_fields', []):
-            points = results[key] * results['scale_factor']
+            points = results[key] * results['scale_factor'][0:2]
             points[:, 0] = np.clip(points[:, 0], 0, img_shape[1] - 1)
             points[:, 1] = np.clip(points[:, 1], 0, img_shape[0] - 1)
             results[key] = points

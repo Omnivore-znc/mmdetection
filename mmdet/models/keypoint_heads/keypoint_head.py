@@ -23,6 +23,7 @@ class KeypointHead(nn.Module):
                  out_channels_fc=1024,
                  target_means=(0.5, 0.5),
                  target_stds=(1.0, 1.0),
+                 double_regress=False,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      #use_sigmoid=True,
@@ -39,6 +40,7 @@ class KeypointHead(nn.Module):
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.target_means = target_means
         self.target_stds = target_stds
+        self.double_regress = double_regress
         if self.use_sigmoid_cls:
             self.cls_out_channels = num_classes - 1
         else:
@@ -59,7 +61,10 @@ class KeypointHead(nn.Module):
                 self.reg_fcs.append(nn.Linear(out_fc_last, self.out_channels_fc))
                 out_fc_last = self.out_channels_fc
         self.fc_cls = nn.Linear(out_fc_last, self.num_points*self.num_classes)
-        self.fc_reg = nn.Linear(out_fc_last, self.num_points*2)
+        if self.double_regress:
+            self.fc_reg = nn.Linear(out_fc_last, self.num_points * 4)
+        else:
+            self.fc_reg = nn.Linear(out_fc_last, self.num_points * 2)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
@@ -94,15 +99,14 @@ class KeypointHead(nn.Module):
             avg_factor=num_total_points)
         return (loss_cls, loss_point)
 
-    def loss(self,
-             cls_scores,
+    def loss(self, cls_scores,
              point_preds,
              gt_points,
              gt_labels,
              img_metas,
              cfg):
-        device = cls_scores[0].device
 
+        device = cls_scores[0].device
         num_images = len(img_metas)
 
         all_cls_scores = torch.cat([
@@ -112,18 +116,21 @@ class KeypointHead(nn.Module):
         all_label_weights = torch.tensor(all_labels)
         all_label_weights[...] = 1
 
-        all_point_preds = torch.cat([
-            b.reshape(num_images, -1, 2) for b in point_preds
-        ], -2)
-        all_point_targets = torch.cat(gt_points,
-                                     -2).view(num_images, -1, 2)
+        num_coord = 2
+        if self.double_regress:
+            num_coord = 4
+
+        all_point_preds = torch.cat([b.reshape(num_images, -1, num_coord) for b in point_preds
+                                     ], -2)
 
         # get deltas
+        all_point_targets = torch.cat(gt_points, -2).view(num_images, -1, 2)
         (all_point_targets, all_point_targets_ori) = multi_apply(self.delta_single,
-                                        all_point_targets,
-                                        img_metas
-                                        )
-        all_point_targets = torch.cat(all_point_targets, -2).view(num_images, -1, 2)
+                                                                 all_point_targets,
+                                                                 img_metas)
+
+        all_point_targets = torch.cat(all_point_targets, -2).view(num_images, -1, num_coord)
+
         # point weight
         all_point_weights = torch.tensor(all_point_targets)
         all_label_weights_tmp = torch.tensor(all_labels)
@@ -135,59 +142,89 @@ class KeypointHead(nn.Module):
 
         #num_total_cls = torch.sum(all_label_weights)
         num_total_cls = torch.sum(all_label_weights)/self.num_points*2
-        num_total_points = torch.sum(all_label_weights_tmp>0)
-        (losses_cls, losses_point) = multi_apply(
-            self.loss_single,
-            all_cls_scores,
-            all_point_preds,
-            all_labels,
-            all_label_weights,
-            all_point_targets,
-            all_point_weights,
-            num_total_cls=num_total_cls,
-            num_total_points=num_total_points,
-            cfg=cfg)
+        #num_total_points = torch.sum(all_label_weights_tmp>0)*num_coord/2
+        num_total_points = torch.sum(all_label_weights_tmp > 0)
+
+        (losses_cls, losses_point) = multi_apply( self.loss_single,
+                                                  all_cls_scores,
+                                                  all_point_preds,
+                                                  all_labels,
+                                                  all_label_weights,
+                                                  all_point_targets,
+                                                  all_point_weights,
+                                                  num_total_cls=num_total_cls,
+                                                  num_total_points=num_total_points,
+                                                  cfg=cfg)
         return dict(loss_cls=losses_cls, loss_point=losses_point)
 
-    def delta_single(self, point_targets, img_meta):
+    def delta_single(self, point_targets, img_meta,):
         point_targets_tmp = point_targets.float()
-        delta_x = point_targets_tmp[:,0]/img_meta['img_shape'][1]
-        delta_y = point_targets_tmp[:,1]/img_meta['img_shape'][0]
-        point_targets_tmp = torch.stack([delta_x, delta_y],-1)
-        target_means = [self.target_means[0],self.target_means[0]]
-        target_stds = [self.target_stds[0], self.target_stds[0]]
+        if self.double_regress:
+            delta_x = point_targets_tmp[:, 0] / img_meta['img_shape'][1]
+            delta_y = point_targets_tmp[:, 1] / img_meta['img_shape'][0]
+            delta_x_mirror = 1 - delta_x
+            delta_y_mirror = 1 - delta_y
+            point_targets_tmp = torch.stack([delta_x, delta_y, delta_x_mirror, delta_y_mirror], -1)
+            target_means = [self.target_means[0], self.target_means[1], self.target_means[0], self.target_means[1]]
+            target_stds = [self.target_stds[0], self.target_stds[1], self.target_stds[0], self.target_stds[1]]
+        else:
+            delta_x = point_targets_tmp[:,0]/img_meta['img_shape'][1]
+            delta_y = point_targets_tmp[:,1]/img_meta['img_shape'][0]
+            point_targets_tmp = torch.stack([delta_x, delta_y],-1)
+            target_means = [self.target_means[0],self.target_means[1]]
+            target_stds = [self.target_stds[0], self.target_stds[1]]
         target_means = point_targets_tmp.new_tensor(target_means).unsqueeze(0)
         target_stds =  point_targets_tmp.new_tensor(target_stds).unsqueeze(0)
         point_targets_tmp = point_targets_tmp.sub_(target_means).div_(target_stds)
         return  (point_targets_tmp,point_targets)
 
-    def get_points(self, cls_scores, point_preds, img_metas, cfg,
+    def get_points(self, cls_scores,
+                   point_preds,
+                   img_metas,
+                   cfg,
                    rescale=False):
         point_list = []
+        num_coord = 2
+        if self.double_regress:
+            num_coord = 4
         for img_id in range(len(img_metas)):
-            cls_scores_one = cls_scores[img_id].reshape( -1, self.cls_out_channels)
-            point_preds_one = point_preds[img_id].reshape( -1, 2)
+            cls_scores_one = cls_scores[img_id].reshape( -1,
+                                                         self.cls_out_channels)
+
+            point_preds_one = point_preds[img_id].reshape( -1,num_coord)
             assert cls_scores_one.size()[0]==point_preds_one.size()[0]
+
             if self.use_sigmoid_cls:
                 scores = cls_scores_one.sigmoid()
                 max_scores, max_idxs = scores.max(dim=1)
             else:
                 scores = cls_scores_one.softmax(-1)
                 max_scores, max_idxs = scores.max(dim=1)
-            points_decoded = self.decode_delta_single(point_preds_one,img_metas[img_id])
+
+            points_decoded = self.decode_delta_single(point_preds_one,
+                                                      img_metas[img_id])
             max_idxs = max_idxs.reshape(max_idxs.size()[-1],1)
             point_list.append(torch.cat((points_decoded,max_idxs.float()),1))
         return  point_list
 
     def decode_delta_single(self, deltas, img_meta):
         points_tmp = deltas.float()
-        target_means = [self.target_means[0], self.target_means[0]]
-        target_stds = [self.target_stds[0], self.target_stds[0]]
+        if self.double_regress:
+            target_means = [self.target_means[0], self.target_means[1], self.target_means[0], self.target_means[1]]
+            target_stds = [self.target_stds[0], self.target_stds[1], self.target_stds[0], self.target_stds[1]]
+        else:
+            target_means = [self.target_means[0], self.target_means[1]]
+            target_stds = [self.target_stds[0], self.target_stds[1]]
         target_means = points_tmp.new_tensor(target_means).unsqueeze(0)
         target_stds = points_tmp.new_tensor(target_stds).unsqueeze(0)
         points_tmp2 = points_tmp.mul_(target_stds).add_(target_means)
         decoded_x = points_tmp2[:,0] * img_meta['ori_shape'][1]
         decoded_y = points_tmp2[:,1] * img_meta['ori_shape'][0]
+        if self.double_regress:
+            decoded_x_mirror = (1.0-points_tmp2[:, 2]) * img_meta['ori_shape'][1]
+            decoded_y_mirror = (1.0-points_tmp2[:, 3]) * img_meta['ori_shape'][0]
+            decoded_x = decoded_x.add_(decoded_x_mirror) / 2.0
+            decoded_y = decoded_y.add_(decoded_y_mirror) / 2.0
         return  torch.stack([decoded_x, decoded_y], -1)
 
 

@@ -1,6 +1,6 @@
 import timeit
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import cv2
 import sys
 sys.path.append('../')
@@ -18,6 +18,11 @@ def draw_line(img, points, idx0, idx1):
                  (int(points[idx1, 0]), int(points[idx1, 1])),
                  (0, 255, 255),
                  2)
+    # cv2.line(img,
+    #          (int(points[idx0, 0]), int(points[idx0, 1])),
+    #          (int(points[idx1, 0]), int(points[idx1, 1])),
+    #          (0, 255, 255),
+    #          2)
 
 def visualize_results(points, img_path, save_path):
     points_tmp = points.cpu()
@@ -33,6 +38,8 @@ def visualize_results(points, img_path, save_path):
         elif points_tmp[i,2]==2:
             cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (255, 0, 0), thickness=2)
         elif points_tmp[i,2]!=0:
+            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 255), thickness=2)
+        else:
             cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 0), thickness=2)
 
     #left_ankle - left_knee
@@ -140,11 +147,11 @@ def runit1(model_config, weights, image_list, out_dir):
             run_num -= 1
 
 if __name__=='__main__':
-    model_config = '/opt/space_host/zhongnanchang/mmdet/mmdetection/configs_znc/blaze_body_keypoint.py'
-    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912140000/epoch_150.pth'
-    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912140000/results'
-    #img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
-    #runit0(model_config, model_weight, img_dir0, out_dir)
+    model_config = '/opt/space_host/zhongnanchang/mmdet/mmdetection/configs_znc/blaze_body_keypoint196.py'
+    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912162011/epoch_195.pth'
+    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912162011/results'
+    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
+    runit0(model_config, model_weight, img_dir0, out_dir)
 
     img_list = '/opt/space_host/data_xiaozu/keypoint_coco2017/idx_list-21w_train.txt'
     runit1(model_config, model_weight, img_list, out_dir)

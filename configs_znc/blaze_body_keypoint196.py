@@ -1,12 +1,12 @@
 num_cls = 3
 num_points = 17
-root_dir = '/opt/space_host/zhongnanchang/'
+root_dir = '/opt/space_host/'
 # model settings
 input_width = 128
 input_height = 128
 model = dict(
     type='PointBoxSingleStageDetector',
-    pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
+    pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/epoch_100.pth',
     #pretrained=None,
     backbone=dict(
         type='BlazeFace',
@@ -72,9 +72,10 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
+
 data = dict(
-    imgs_per_gpu=32,
-    workers_per_gpu=8,
+    imgs_per_gpu=160,
+    workers_per_gpu=6,
     train=dict(
         type='RepeatDataset',
         times=2,
@@ -97,7 +98,7 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.05, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.06, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -105,7 +106,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[100, 150, 170])
+    step=[100,150,180])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -117,10 +118,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 180
+total_epochs = 200
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912140000'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912162011'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
