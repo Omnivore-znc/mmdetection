@@ -118,8 +118,8 @@ def runit0(model_config, weights, image_dir, out_dir):
 
 if __name__=='__main__':
     model_config = '../configs_znc/blaze_body_keypoint.py'
-    model_weight = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate/epoch_100.pth'
-    out_dir = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate/vis_result'
+    model_weight = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/epoch_100.pth'
+    out_dir = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/vis_result'
 
     img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
     runit0(model_config, model_weight, img_dir0, out_dir)

@@ -28,7 +28,7 @@ cudnn_benchmark = True
 train_cfg = dict(
     smoothl1_beta=1.,
     debug=False)
-test_cfg = dict( score_thr=0.02)
+test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
 data_root = '/data_point/keypoint_coco2017/'
@@ -122,5 +122,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir =  './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2'
 load_from = None
-resume_from = None
+resume_from = './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]

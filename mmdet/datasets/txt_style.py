@@ -56,6 +56,8 @@ class TXTDataset(CustomDataset):
 
     def get_ann_info(self, idx):
         img_id = self.img_infos[idx]['id']
+        img_w = self.img_infos[idx]['width']
+        img_h = self.img_infos[idx]['height']
         txt_path = osp.join(self.img_prefix, 'IMAGE_ANNOTATIONS',
                             '{}.txt'.format(img_id))
         points = []
@@ -107,7 +109,10 @@ class TXTDataset(CustomDataset):
         ann = dict(points = points.astype(np.float32),
                    labels = labels.astype(np.int64),
                    points_ignore = points_ignore,
-                   labels_ignore = labels_ignore)
+                   labels_ignore = labels_ignore,
+                   height = img_h,
+                   width = img_w
+                   )
         return ann
 
     def _filter_imgs(self, min_size=4):

@@ -12,6 +12,7 @@ import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, load_checkpoint
 
+from mmdet import datasets
 from mmdet.apis import init_dist
 from mmdet.core import coco_eval, results2json, wrap_fp16_model, keypoints_eval
 from mmdet.datasets import build_dataloader, build_dataset
@@ -22,8 +23,11 @@ def single_gpu_test(model, data_loader, show=False):
     model.eval()
     results = []
     dataset = data_loader.dataset
+    # dataset = data_loader
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        # data['img'][0] = data['img'][0].unsqueeze(0)
+        # data['img_meta'][0].__len__ = len(data['img_meta'])
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
@@ -34,9 +38,6 @@ def single_gpu_test(model, data_loader, show=False):
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
-
-        if len(results)==10:
-            break
 
     return results
 
@@ -162,6 +163,8 @@ def main():
     cfg.data.test.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
+    args.launcher = 'none'
+
     if args.launcher == 'none':
         distributed = False
     else:
@@ -174,8 +177,8 @@ def main():
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
-        workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=distributed,
+        workers_per_gpu=1, #cfg.data.workers_per_gpu,
+        dist=False, #distributed,
         shuffle=False)
 
     # build the model and load checkpoint
@@ -194,6 +197,7 @@ def main():
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show)
+        # outputs = single_gpu_test(model, dataset, args.show)
     else:
         model = MMDistributedDataParallel(model.cuda())
         outputs = multi_gpu_test(model, data_loader, args.tmpdir)
@@ -213,7 +217,8 @@ def main():
 
             elif eval_types == ['human-points']:
                 result_file = args.out
-                keypoints_eval(result_file, eval_types, data_loader)
+                test_dataset = mmcv.runner.obj_from_dict(cfg.data.test, datasets)
+                keypoints_eval(result_file, eval_types, test_dataset)
 
                 pass
             else:
@@ -228,17 +233,6 @@ def main():
                         result_files = results2json(dataset, outputs_,
                                                     result_file)
                         coco_eval(result_files, eval_types, dataset.coco)
-
-    # Save predictions in the COCO json format
-    if args.json_out and rank == 0:
-        if not isinstance(outputs[0], dict):
-            results2json(dataset, outputs, args.json_out)
-        else:
-            for name in outputs[0]:
-                outputs_ = [out[name] for out in outputs]
-                result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
-
 
 if __name__ == '__main__':
     main()
