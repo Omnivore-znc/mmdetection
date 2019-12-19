@@ -8,6 +8,7 @@ from terminaltables import AsciiTable
 from time import time, clock
 from .recall import eval_recalls
 from tqdm import tqdm
+from .visibility_class_eval import visibility_cls_eval
 
 
 def keypoints_eval(result_files,
@@ -22,7 +23,7 @@ def keypoints_eval(result_files,
             'human-points'
         ]
 
-    eval_type = 'pck'  # pck or oks
+    eval_type = 'oks'  # pck or oks
 
     det_results = mmcv.load(result_files)
 
@@ -69,6 +70,8 @@ def keypoints_eval(result_files,
         pck_eval(det_results, gt_points, gt_labels, gt_normalize)
     elif eval_type=='oks':
         computeOks(det_results, gt_points, gt_labels, gt_height, gt_width)
+
+    visibility_cls_eval(det_results, gt_labels)
 
 
 def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):

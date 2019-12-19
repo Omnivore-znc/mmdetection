@@ -14,6 +14,7 @@ from mmdet import datasets
 from .coco_utils import fast_eval_recall, results2json
 from .mean_ap import eval_map
 from .body_keypoint_pck import pck_eval, computeOks
+from .visibility_class_eval import visibility_cls_eval
 
 
 class DistEvalHook(Hook):
@@ -177,6 +178,8 @@ class DistEvalPointmAPHook(DistEvalHook):
                 gt_height,
                 gt_width,
             )
+            visibility_cls_eval(results, gt_labels)
+
 
             # runner.log_buffer.output['mAP'] = mean_ap
         runner.log_buffer.ready = True

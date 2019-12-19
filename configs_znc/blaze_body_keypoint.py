@@ -122,5 +122,6 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir =  './checkpoint/work_dirs/blaze_body_oks_map_test'
 load_from = None
-resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
+resume_from = './checkpoint/work_dirs/blaze_body_oks_map_test/latest.pth'
+# resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]

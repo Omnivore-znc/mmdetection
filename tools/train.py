@@ -31,8 +31,8 @@ def parse_args():
         help='the checkpoint file to resume from')
     parser.add_argument(
         '--validate',
-        default=True,
-        #action='store_true',
+        # default=True,
+        action='store_true',
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
         '--gpus',
@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
-        default='none',
+        # default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument(
