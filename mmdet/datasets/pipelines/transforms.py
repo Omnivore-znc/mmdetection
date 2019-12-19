@@ -247,7 +247,7 @@ class Resize(object):
 
 
 @PIPELINES.register_module
-class RandomFlip(object):
+class RandomFlip2(object):
     """Flip the image & bbox & mask.
 
     If the input dict contains the key "flip", then the flag will be used,
@@ -306,9 +306,9 @@ class RandomFlip(object):
             bboxes(ndarray): shape (..., 4*k)
             img_shape(tuple): (height, width)
         """
+        flip_list = [[0], [1,2], [3,4],[5,6], [7,8], [9, 10], [11,12], [13,14], [15,16]]
         assert points.shape[-1] % 2 == 0
         w = img_shape[1]
-
         is_flipped = False
         labels_flipped = []
         flipped = []
@@ -396,12 +396,80 @@ class RandomFlip(object):
                     results[key], _, is_flipped = self.point_flip(results[key],
                                                                   None,
                                                                   results['img_shape'])
-
         return results
 
     def __repr__(self):
         return self.__class__.__name__ + '(flip_ratio={})'.format(
             self.flip_ratio)
+
+
+@PIPELINES.register_module
+class RandomRotatePoint(object):
+    """Rotate the image & point
+
+    If the input dict contains the key "flip", then the flag will be used,
+    otherwise it will be randomly decided by a ratio specified in the init
+    method.
+
+    Args:
+        rotate_ratio (float, optional): The flipping probability.
+    """
+
+    def __init__(self, pad, max_rotate_degree=40,  rotate_ratio=0.5):
+        self._pad = pad
+        self._max_rotate_degree = max_rotate_degree
+        self.rotate_ratio = rotate_ratio
+
+
+    def __call__(self, results):
+
+        if np.random.rand()>self.rotate_ratio:
+            return results
+
+        prob = random.random()
+        degree = (prob - 0.5) * 2 * self._max_rotate_degree
+        h, w, _ = results['img_shape']
+        img_center = (w / 2, h / 2)
+        R = cv2.getRotationMatrix2D(img_center, degree, 1)
+
+        abs_cos = abs(R[0, 0])
+        abs_sin = abs(R[0, 1])
+
+        bound_w = int(h * abs_sin + w * abs_cos)
+        bound_h = int(h * abs_cos + w * abs_sin)
+        dsize = (bound_w, bound_h)
+
+        R[0, 2] += dsize[0] / 2 - img_center[0]
+        R[1, 2] += dsize[1] / 2 - img_center[1]
+        results['img'] = cv2.warpAffine(results['img'], R, dsize=dsize,
+                                         borderMode=cv2.BORDER_CONSTANT, borderValue=self._pad)
+        results['img_shape'] = results['img'].shape
+        # results['mask'] = cv2.warpAffine(results['mask'], R, dsize=dsize,
+        #                                 borderMode=cv2.BORDER_CONSTANT, borderValue=(1, 1, 1))  # border is ok
+
+        # 旋转box， 暂时忽略
+        # label['objpos'] = self._rotate(label['objpos'], R)
+        for key in results.get('point_fields', []):
+            results[key] = self.parse_rotate(results[key], R)
+
+        return results
+
+    def parse_rotate(self, points, R):
+        rotated = points.copy()
+        for keypoint, rot in zip(points, rotated):
+            point = [keypoint[0], keypoint[1]]
+            point = self._rotate(point, R)
+            rot[0], rot[1] = point[0], point[1]
+
+        return rotated
+
+    def _rotate(self, point, R):
+        return [R[0, 0] * point[0] + R[0, 1] * point[1] + R[0, 2],
+                R[1, 0] * point[0] + R[1, 1] * point[1] + R[1, 2]]
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(max rotate degree={})'.format(
+            self._max_rotate_degree)
 
 
 @PIPELINES.register_module
@@ -486,6 +554,81 @@ class Normalize(object):
             self.mean, self.std, self.to_rgb)
         return repr_str
 
+@PIPELINES.register_module
+class RandomCropPoint(object):
+    """Random crop the image & bboxes & masks.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+    """
+
+    def __init__(self, crop_size, min_num_points, crop_ratio):
+
+        # random crop size
+        crop_h = np.random.randint(crop_size[0]-32, crop_size[0]+32, size=1)
+        crop_w = np.random.randint(crop_size[1]-16, crop_size[1]+16, size=1)
+
+        self.crop_size = (crop_h[0], crop_w[0])
+        self.min_num_points = min_num_points
+        self.crop_ratio = crop_ratio
+
+    def __call__(self, results):
+
+        if np.random.rand()>self.crop_ratio:
+            return results
+
+        img = results['img']
+
+        # 增大crop范围
+        if img.shape[0]<=36 or img.shape[1]<=20:
+            return results
+
+        crop_h = np.random.randint(32, img.shape[0], size=1)
+        crop_w = np.random.randint(16, img.shape[1], size=1)
+        self.crop_size = (crop_h[0], crop_w[0])
+
+
+        margin_h = max(img.shape[0] - self.crop_size[0], 0)
+        margin_w = max(img.shape[1] - self.crop_size[1], 0) # margin =0, offset=0
+        offset_h = np.random.randint(0, margin_h + 1)
+        offset_w = np.random.randint(0, margin_w + 1)
+        crop_y1, crop_y2 = offset_h, offset_h + self.crop_size[0]
+        crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
+
+        # crop the image
+        # if img size<crop size, 保留了原始图像大小
+        img = img[crop_y1:crop_y2, crop_x1:crop_x2, :]
+        img_shape = img.shape
+
+        # crop points accordingly and clip to the image boundary
+        for key in results.get('point_fields', []):
+            point_offset = np.array([offset_w, offset_h], dtype=np.float32)
+            points = results[key] - point_offset
+
+            points[:, 0] = np.clip(points[:, 0], -1, img_shape[1] - 1)
+            points[:, 1] = np.clip(points[:, 1], -1, img_shape[0] - 1)
+            invalid_inds = (points[:, 0]==-1) | (points[:, 1]==-1) | \
+                           (points[:, 0]==img_shape[1] - 1) | (points[:, 1]==img_shape[0] - 1)
+            num_invalid = np.sum(invalid_inds)
+
+            if num_invalid > (points.shape[0] - self.min_num_points):
+                return results
+
+            # if 'gt_labels' in results:
+            gt_labels = results['gt_labels']
+            gt_labels[invalid_inds] = 0
+
+            results['gt_labels'] = gt_labels
+            results[key] = points
+
+            results['img'] = img
+            results['img_shape'] = img_shape
+
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(crop_size={})'.format(
+            self.crop_size)
 
 @PIPELINES.register_module
 class RandomCrop(object):

@@ -1,7 +1,11 @@
 from __future__ import division
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+import os.path as osp
+import sys
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 
 import torch
 from mmcv import Config
@@ -26,7 +30,7 @@ def parse_args():
     parser.add_argument(
         '--gpus',
         type=int,
-        default=1,
+        default=4,
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
@@ -35,7 +39,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local_rank', type=int, default=4)
     parser.add_argument(
         '--autoscale-lr',
         action='store_true',

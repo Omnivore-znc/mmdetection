@@ -104,6 +104,7 @@ class BaseDetector(nn.Module):
 
         if num_augs == 1:
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            # return self.simple_test(imgs[0], img_metas, **kwargs)
         else:
             return self.aug_test(imgs, img_metas, **kwargs)
 

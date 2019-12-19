@@ -1,7 +1,6 @@
 import argparse
 import os
 import os.path as osp
-import pickle
 import shutil
 import tempfile
 
@@ -13,6 +12,7 @@ import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, load_checkpoint
 
+from mmdet import datasets
 from mmdet.apis import init_dist
 from mmdet.core import coco_eval, results2json, wrap_fp16_model, keypoints_eval
 from mmdet.datasets import build_dataloader, build_dataset
@@ -23,8 +23,11 @@ def single_gpu_test(model, data_loader, show=False):
     model.eval()
     results = []
     dataset = data_loader.dataset
+    # dataset = data_loader
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        # data['img'][0] = data['img'][0].unsqueeze(0)
+        # data['img_meta'][0].__len__ = len(data['img_meta'])
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
@@ -36,30 +39,9 @@ def single_gpu_test(model, data_loader, show=False):
         for _ in range(batch_size):
             prog_bar.update()
 
-        if len(results)==10:
-            break
-
     return results
 
-def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
-    """Test model with multiple gpus.
-
-    This method tests model with multiple gpus and collects the results
-    under two different modes: gpu and cpu modes. By setting 'gpu_collect=True'
-    it encodes results to gpu tensors and use gpu communication for results
-    collection. On cpu mode it saves the results on different gpus to 'tmpdir'
-    and collects them by the rank 0 worker.
-
-    Args:
-        model (nn.Module): Model to be tested.
-        data_loader (nn.Dataloader): Pytorch data loader.
-        tmpdir (str): Path of directory to save the temporary results from
-            different gpus under cpu mode.
-        gpu_collect (bool): Option to use either gpu or cpu to collect results.
-
-    Returns:
-        list: The prediction results.
-    """
+def multi_gpu_test(model, data_loader, tmpdir=None):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -77,14 +59,12 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
                 prog_bar.update()
 
     # collect results from all ranks
-    if gpu_collect:
-        results = collect_results_gpu(results, len(dataset))
-    else:
-        results = collect_results_cpu(results, len(dataset), tmpdir)
+    results = collect_results(results, len(dataset), tmpdir)
+
     return results
 
 
-def collect_results_cpu(result_part, size, tmpdir=None):
+def collect_results(result_part, size, tmpdir=None):
     rank, world_size = get_dist_info()
     # create a tmp dir if it is not specified
     if tmpdir is None:
@@ -126,39 +106,6 @@ def collect_results_cpu(result_part, size, tmpdir=None):
         return ordered_results
 
 
-def collect_results_gpu(result_part, size):
-    rank, world_size = get_dist_info()
-    # dump result part to tensor with pickle
-    part_tensor = torch.tensor(
-        bytearray(pickle.dumps(result_part)), dtype=torch.uint8, device='cuda')
-    # gather all result part tensor shape
-    shape_tensor = torch.tensor(part_tensor.shape, device='cuda')
-    shape_list = [shape_tensor.clone() for _ in range(world_size)]
-    dist.all_gather(shape_list, shape_tensor)
-    # padding result part tensor to max length
-    shape_max = torch.tensor(shape_list).max()
-    part_send = torch.zeros(shape_max, dtype=torch.uint8, device='cuda')
-    part_send[:shape_tensor[0]] = part_tensor
-    part_recv_list = [
-        part_tensor.new_zeros(shape_max) for _ in range(world_size)
-    ]
-    # gather all result part
-    dist.all_gather(part_recv_list, part_send)
-
-    if rank == 0:
-        part_list = []
-        for recv, shape in zip(part_recv_list, shape_list):
-            part_list.append(
-                pickle.loads(recv[:shape[0]].cpu().numpy().tobytes()))
-        # sort the results
-        ordered_results = []
-        for res in zip(*part_list):
-            ordered_results.extend(list(res))
-        # the dataloader may pad some samples
-        ordered_results = ordered_results[:size]
-        return ordered_results
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test detector')
     parser.add_argument('--config',
@@ -182,10 +129,6 @@ def parse_args():
         # choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'human-points'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
-    parser.add_argument(
-        '--gpu_collect',
-        action='store_true',
-        help='whether to use gpu to collect results')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
     parser.add_argument(
         '--launcher',
@@ -220,6 +163,8 @@ def main():
     cfg.data.test.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
+    args.launcher = 'none'
+
     if args.launcher == 'none':
         distributed = False
     else:
@@ -232,8 +177,8 @@ def main():
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
-        workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=distributed,
+        workers_per_gpu=1, #cfg.data.workers_per_gpu,
+        dist=False, #distributed,
         shuffle=False)
 
     # build the model and load checkpoint
@@ -252,10 +197,10 @@ def main():
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show)
+        # outputs = single_gpu_test(model, dataset, args.show)
     else:
         model = MMDistributedDataParallel(model.cuda())
-        outputs = multi_gpu_test(model, data_loader, args.tmpdir,
-                                 args.gpu_collect)
+        outputs = multi_gpu_test(model, data_loader, args.tmpdir)
 
     rank, _ = get_dist_info()
 
@@ -272,7 +217,8 @@ def main():
 
             elif eval_types == ['human-points']:
                 result_file = args.out
-                keypoints_eval(result_file, eval_types, data_loader)
+                test_dataset = mmcv.runner.obj_from_dict(cfg.data.test, datasets)
+                keypoints_eval(result_file, eval_types, test_dataset)
 
                 pass
             else:
@@ -287,17 +233,6 @@ def main():
                         result_files = results2json(dataset, outputs_,
                                                     result_file)
                         coco_eval(result_files, eval_types, dataset.coco)
-
-    # Save predictions in the COCO json format
-    if args.json_out and rank == 0:
-        if not isinstance(outputs[0], dict):
-            results2json(dataset, outputs, args.json_out)
-        else:
-            for name in outputs[0]:
-                outputs_ = [out[name] for out in outputs]
-                result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
-
 
 if __name__ == '__main__':
     main()

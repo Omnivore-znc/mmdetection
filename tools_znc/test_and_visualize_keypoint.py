@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import cv2
 import sys
 sys.path.append('../')
-from mmdetection.mmdet.apis import inference
+from mmdet.apis import inference
 
 img_types = ['.jpg','.jpeg','.png','.bmp']
 class_names = ['hidden','visible']
@@ -151,6 +151,14 @@ if __name__=='__main__':
     model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912182300_noKeepWHratio/epoch_180.pth'
     out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912182300_noKeepWHratio/results'
     img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
+    
+    '''
+    model_config = '../configs_znc/blaze_body_keypoint.py'
+    model_weight = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/epoch_100.pth'
+    out_dir = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/vis_result'
+    img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
+    '''
+
     runit0(model_config, model_weight, img_dir0, out_dir)
 
     img_list = '/opt/space_host/data_xiaozu/keypoint_coco2017/idx_list-21w_train.txt'
