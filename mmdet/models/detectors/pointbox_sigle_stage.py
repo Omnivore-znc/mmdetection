@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import torch.nn as nn
+import os
 import cv2
 from ..registry import DETECTORS
 from .single_stage import SingleStageDetector
@@ -49,22 +49,29 @@ class PointBoxSingleStageDetector(SingleStageDetector):
                       gt_labels,
                       gt_bboxes=None,
                       gt_bboxes_ignore=None):
-        # # log
-        # #img.
-        # # todo-znc
-        # print(sys._getframe())
-        # #print(sys._getframe().f_lineno )
-        # img_tmp =  np.array(img[0].cpu().numpy().transpose(1,2,0).astype(np.uint8))
-        # for i in range(len(gt_points[0])):
-        #     center = gt_points[0].cpu().numpy().astype(np.int)[i]
-        #     cv2.circle(img_tmp,(center[0],center[1]),2,(0,255,0))
-        # cv2.imwrite("haha2.jpg",img_tmp)
-        #
-        # img_tmp = np.ones((128,64,3),np.uint8)*200
-        # for i in range(len(gt_points[0])):
-        #     center = gt_points[0].cpu().numpy().astype(np.int)[i]
-        #     cv2.circle(img_tmp,(center[0],center[1]),2,(0,255,0))
-        # cv2.imwrite("haha3.jpg", img_tmp)
+        '''
+        # # todo
+        #print(sys._getframe())
+        #print(sys._getframe().f_lineno )
+        # for m in range(len(img_metas)):
+        #     meta = img_metas[m]
+        #     ydt = int((meta['img_shape'][0] - meta['img_resize_shape'][0]) / 2)
+        #     xdt = int((meta['img_shape'][1] - meta['img_resize_shape'][1]) / 2)
+        #     img_tmp =  np.array(img[m].cpu().numpy().transpose(1,2,0).astype(np.uint8))
+        #     points_tmp = gt_points[m].cpu().numpy().astype(np.int)
+        #     labels_tmp = gt_labels[m].cpu().numpy().astype(np.int)
+        #     for i in range(len(points_tmp)):
+        #         center = points_tmp[i]
+        #         # if labels_tmp[i]==0:
+        #         #     cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 255, 0))
+        #         # else:
+        #         #     cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 0, 255))
+        #     save_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_post'
+        #     _,name = os.path.split(meta['filename'])
+        #     save_path = os.path.join(save_dir,name)
+        #     cv2.imwrite(save_path,img_tmp)
+        '''
+
 
         x = self.extract_feat(img)
         losses_pt = None
@@ -84,22 +91,11 @@ class PointBoxSingleStageDetector(SingleStageDetector):
         x = self.extract_feat(img)
         outs_pt = None
         if self.with_bbox:
-            # outs = self.bbox_head(x)
-            # bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-            # bbox_list = self.bbox_head.get_bboxes(*bbox_inputs)
-            # bbox_results = [
-            #     bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            #     for det_bboxes, det_labels in bbox_list
-            # ]
             raise NotImplementedError
         if self.with_point:
             outs_pt = self.point_head(x)
             point_inputs = outs_pt + (img_meta, self.test_cfg, rescale)
             point_list = self.point_head.get_points(*point_inputs)
-            # point_results = [
-            #     point2result(det_points, det_labels, self.point_head.num_classes)
-            #     for det_points, det_labels in point_list
-            # ]
         return point_list
 
     def aug_test(self, imgs, img_metas, rescale=False):

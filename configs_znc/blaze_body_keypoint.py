@@ -2,12 +2,12 @@ num_cls = 3
 num_points = 17
 root_dir = '/opt/space_host/zhongnanchang/'
 # model settings
-input_width = 128
+input_width = 80
 input_height = 128
 model = dict(
     type='PointBoxSingleStageDetector',
-    pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
-    #pretrained=None,
+    #pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
+    pretrained=None,
     backbone=dict(
         type='BlazeFace',
         input_width=input_width,
@@ -34,6 +34,7 @@ test_cfg = dict( score_thr=0.02)
 dataset_type = 'BodyKeypointDataset'
 data_root = '/opt/space_host/data_xiaozu/keypoint_coco2017/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+#img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_point=True),
@@ -52,9 +53,13 @@ train_pipeline = [
     #     type='MinIoURandomCrop',
     #     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
     #     min_crop_size=0.3),
-    dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
+    dict(type='Resize',
+         img_scale=(input_width, input_height),
+         keep_ratio=True,
+         center_padded=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Pad', size_divisor=16),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_points', 'gt_labels']),
 ]
@@ -65,16 +70,19 @@ test_pipeline = [
         img_scale=(input_width, input_height),
         flip=False,
         transforms=[
-            dict(type='Resize', keep_ratio=False),
+            dict(type='Resize',
+                 keep_ratio=True,
+                 center_padded=True),
             #dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
             dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=16),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
 ]
 data = dict(
-    imgs_per_gpu=32,
-    workers_per_gpu=8,
+    imgs_per_gpu=16,
+    workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
         times=2,
@@ -97,7 +105,7 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.05, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(

@@ -1,6 +1,6 @@
 import inspect
 
-import sys
+import os
 
 import albumentations
 import cv2
@@ -45,7 +45,8 @@ class Resize(object):
                  img_scale=None,
                  multiscale_mode='range',
                  ratio_range=None,
-                 keep_ratio=True):
+                 keep_ratio=True,
+                 center_padded=False):
         if img_scale is None:
             self.img_scale = None
         else:
@@ -65,6 +66,10 @@ class Resize(object):
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
+        self.center_padded = center_padded
+
+        if self.keep_ratio and self.center_padded:
+            assert (not isinstance(self.img_scale, (float, int)))
 
     @staticmethod
     def random_select(img_scales):
@@ -112,20 +117,66 @@ class Resize(object):
         results['scale'] = scale
         results['scale_idx'] = scale_idx
 
+    def imrescale_special(self, img, scale, return_scale=False, interpolation='bilinear'):
+        h, w = img.shape[:2]
+        if isinstance(scale, (float, int)):
+            if scale <= 0:
+                raise ValueError(
+                    'Invalid scale {}, must be positive.'.format(scale))
+            scale_factor = scale
+        elif isinstance(scale, tuple):
+            width = scale[0]
+            height = scale[1]
+            scale_factor = min(width / w, height / h)
+        else:
+            raise TypeError(
+                'Scale must be a number or tuple of int, but got {}'.format(
+                    type(scale)))
+        new_size = (int(w * float(scale_factor) + 0.5), int(h * float(scale_factor) + 0.5))
+        rescaled_img = mmcv.imresize(img, new_size, interpolation=interpolation)
+        if return_scale:
+            return rescaled_img, scale_factor
+        else:
+            return rescaled_img
+
     def _resize_img(self, results):
-        if self.keep_ratio:
+        if self.keep_ratio and not self.center_padded:
             img, scale_factor = mmcv.imrescale(
+                results['img'], results['scale'], return_scale=True)
+        if self.keep_ratio and self.center_padded:
+            img, scale_factor = self.imrescale_special(
                 results['img'], results['scale'], return_scale=True)
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 results['img'], results['scale'], return_scale=True)
             scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
                                     dtype=np.float32)
-        results['img'] = img
+
         results['img_shape'] = img.shape
+        results['img_resize_shape'] = img.shape
         results['pad_shape'] = img.shape  # in case that there is no padding
         results['scale_factor'] = scale_factor
         results['keep_ratio'] = self.keep_ratio
+        if self.keep_ratio and self.center_padded:
+            scale = [results['scale'][1],results['scale'][0],3]
+            img_tmp = np.zeros(scale,np.float)
+            y_t = int((img_tmp.shape[0] - img.shape[0]) / 2)
+            x_t = int((img_tmp.shape[1] - img.shape[1]) / 2)
+            img_tmp[y_t:(y_t+img.shape[0]), x_t:(x_t+img.shape[1]),:] = img
+            results['img'] = img_tmp
+            results['img_shape'] = img_tmp.shape
+
+            ###todo
+            # img8 = img.astype(np.uint8)
+            # cv2.imwrite("img8.jpg", img8)
+            # img8_tmp = img_tmp.astype(np.uint8)
+            # cv2.imwrite("img8_tmp.jpg",img8_tmp)
+            save_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_pre'
+            _, name = os.path.split(results['filename'])
+            save_path = os.path.join(save_dir, name)
+            cv2.imwrite(save_path, img_tmp)
+        else:
+            results['img'] = img
 
     def _resize_bboxes(self, results):
         img_shape = results['img_shape']
@@ -156,7 +207,10 @@ class Resize(object):
     def _resize_points(self, results):
         img_shape = results['img_shape']
         for key in results.get('point_fields', []):
-            points = results[key] * results['scale_factor'][0:2]
+            scale = results['scale_factor']
+            if isinstance(scale,float):
+                scale = [scale,scale]
+            points = results[key] * scale[0:2]
             points[:, 0] = np.clip(points[:, 0], 0, img_shape[1] - 1)
             points[:, 1] = np.clip(points[:, 1], 0, img_shape[0] - 1)
             results[key] = points
@@ -169,7 +223,8 @@ class Resize(object):
         self._resize_masks(results)
         self._resize_points(results)
 
-        # # todo-znc
+        '''
+        # # todo
         # print(sys._getframe())
         # #print(sys._getframe().f_lineno )
         # img = np.array( results['img'], results['img'].dtype)
@@ -177,6 +232,7 @@ class Resize(object):
         #     center = results['gt_points'][i].astype(np.int)
         #     cv2.circle(img,(center[0],center[1]),2,(0,0,255))
         # cv2.imwrite("haha.jpg",img)
+        '''
 
         return results
 

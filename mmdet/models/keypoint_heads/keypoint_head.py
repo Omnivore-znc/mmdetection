@@ -160,16 +160,16 @@ class KeypointHead(nn.Module):
     def delta_single(self, point_targets, img_meta,):
         point_targets_tmp = point_targets.float()
         if self.double_regress:
-            delta_x = point_targets_tmp[:, 0] / img_meta['img_shape'][1]
-            delta_y = point_targets_tmp[:, 1] / img_meta['img_shape'][0]
+            delta_x = point_targets_tmp[:, 0] / img_meta['img_resize_shape'][1]
+            delta_y = point_targets_tmp[:, 1] / img_meta['img_resize_shape'][0]
             delta_x_mirror = 1 - delta_x
             delta_y_mirror = 1 - delta_y
             point_targets_tmp = torch.stack([delta_x, delta_y, delta_x_mirror, delta_y_mirror], -1)
             target_means = [self.target_means[0], self.target_means[1], self.target_means[0], self.target_means[1]]
             target_stds = [self.target_stds[0], self.target_stds[1], self.target_stds[0], self.target_stds[1]]
         else:
-            delta_x = point_targets_tmp[:,0]/img_meta['img_shape'][1]
-            delta_y = point_targets_tmp[:,1]/img_meta['img_shape'][0]
+            delta_x = point_targets_tmp[:,0]/img_meta['img_resize_shape'][1]
+            delta_y = point_targets_tmp[:,1]/img_meta['img_resize_shape'][0]
             point_targets_tmp = torch.stack([delta_x, delta_y],-1)
             target_means = [self.target_means[0],self.target_means[1]]
             target_stds = [self.target_stds[0], self.target_stds[1]]
