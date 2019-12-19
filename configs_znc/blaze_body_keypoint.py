@@ -51,7 +51,7 @@ train_pipeline = [
     #     type='MinIoURandomCrop',
     #     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
     #     min_crop_size=0.3),
-    dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=5, crop_ratio=0.5),
+    dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=3, crop_ratio=0.5),
     dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=10, rotate_ratio=0.5),
     dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
     dict(type='Normalize', **img_norm_cfg),
@@ -73,14 +73,14 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=128,
-    workers_per_gpu=1,
+    imgs_per_gpu=256,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
-        times=2,
+        times=1,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-21w.txt',
+        ann_file= data_root + 'idx_list-21w_train.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
@@ -105,7 +105,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3,
-    step=[60, 90])
+    step=[90, 130, 160])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -117,10 +117,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 100
+total_epochs = 200
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2'
+work_dir =  './checkpoint/work_dirs/blaze_body_oks_map_test'
 load_from = None
-resume_from = './checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
+resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]

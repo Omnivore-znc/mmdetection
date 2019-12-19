@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 from mmdet import datasets
 from .coco_utils import fast_eval_recall, results2json
 from .mean_ap import eval_map
+from .body_keypoint_pck import pck_eval, computeOks
 
 
 class DistEvalHook(Hook):
@@ -110,6 +111,74 @@ class DistEvalmAPHook(DistEvalHook):
             dataset=ds_name,
             print_summary=True)
         runner.log_buffer.output['mAP'] = mean_ap
+        runner.log_buffer.ready = True
+
+class DistEvalPointmAPHook(DistEvalHook):
+
+    def evaluate(self, runner, results):
+        gt_points = []
+        gt_labels = []
+        gt_ignore = []
+        gt_normalize = []
+        gt_height = []
+        gt_width = []
+
+        eval_type = 'oks'  # pck or oks
+
+        for i in range(len(self.dataset)):
+            ann = self.dataset.get_ann_info(i)
+            # print(ann)
+            points = ann['points']
+            labels = ann['labels']
+
+            # print(points.shape)
+            # 暂时不考虑ignore
+            if 'points_ignore' in ann:
+                ignore = np.concatenate([
+                    np.zeros(points.shape[0], dtype=np.bool),
+                    np.ones(ann['points_ignore'].shape[0], dtype=np.bool)
+                ])
+                gt_ignore.append(ignore)
+                points = np.vstack([points, ann['points_ignore']])
+                labels = np.concatenate([labels, ann['labels_ignore']])
+
+            # print(points.shape)
+            gt_points.append(points)
+            gt_labels.append(labels)
+
+            if eval_type == 'pck':
+                normalize = np.sqrt(ann['height'] ** 2 + ann['width'] ** 2)
+                gt_normalize.append(normalize)
+            elif eval_type == 'oks':
+                gt_height.append(ann['height'])
+                gt_width.append(ann['width'])
+
+        if not gt_ignore:
+            gt_ignore = None
+        # If the dataset is VOC2007, then use 11 points mAP evaluation.
+        if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
+            ds_name = 'voc07'
+        else:
+            ds_name = self.dataset.CLASSES
+
+        if eval_type == 'pck':
+            pck_eval(
+                results,
+                gt_points,
+                gt_labels,
+                gt_normalize,
+                bound=0.5
+            )
+        elif eval_type == 'oks':
+            computeOks(
+                results,
+                gt_points,
+                gt_labels,
+                gt_height,
+                gt_width,
+            )
+
+            # runner.log_buffer.output['mAP'] = mean_ap
         runner.log_buffer.ready = True
 
 

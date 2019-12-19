@@ -456,7 +456,7 @@ class RandomCropPoint(object):
         crop_h = np.random.randint(crop_size[0]-32, crop_size[0]+32, size=1)
         crop_w = np.random.randint(crop_size[1]-16, crop_size[1]+16, size=1)
 
-        self.crop_size = (crop_h, crop_w)
+        self.crop_size = (crop_h[0], crop_w[0])
         self.min_num_points = min_num_points
         self.crop_ratio = crop_ratio
 
@@ -466,6 +466,16 @@ class RandomCropPoint(object):
             return results
 
         img = results['img']
+
+        # 增大crop范围
+        if img.shape[0]<=36 or img.shape[1]<=20:
+            return results
+
+        crop_h = np.random.randint(32, img.shape[0], size=1)
+        crop_w = np.random.randint(16, img.shape[1], size=1)
+        self.crop_size = (crop_h[0], crop_w[0])
+
+
         margin_h = max(img.shape[0] - self.crop_size[0], 0)
         margin_w = max(img.shape[1] - self.crop_size[1], 0) # margin =0, offset=0
         offset_h = np.random.randint(0, margin_h + 1)

@@ -24,5 +24,5 @@ cd /jayden/mmdetection
 #cd ..
 python setup.py develop
 chmod 777 ./tools/ -R
-export CUDA_VISIBLE_DEVICES=3
-./tools/dist_train.sh ./configs_znc/blaze_body_keypoint.py 1
+export CUDA_VISIBLE_DEVICES=2,3,4,5
+./tools/dist_train.sh ./configs_znc/blaze_body_keypoint.py 4

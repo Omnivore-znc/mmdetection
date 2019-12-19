@@ -1,7 +1,7 @@
 from __future__ import division
 import argparse
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import os.path as osp
 import sys
@@ -15,7 +15,6 @@ from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
                         train_detector)
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -32,7 +31,8 @@ def parse_args():
         help='the checkpoint file to resume from')
     parser.add_argument(
         '--validate',
-        action='store_true',
+        default=True,
+        #action='store_true',
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
         '--gpus',

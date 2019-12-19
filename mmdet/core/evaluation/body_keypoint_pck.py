@@ -22,7 +22,7 @@ def keypoints_eval(result_files,
             'human-points'
         ]
 
-    eval_type = 'oks'  # pck or oks
+    eval_type = 'pck'  # pck or oks
 
     det_results = mmcv.load(result_files)
 
@@ -102,7 +102,6 @@ def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):
                   "hip","hip","knee","knee","ankle","ankle"]
 
     assert len(joint_list)==17
-
     count = copy.deepcopy(correct)
 
     for pred, gpoint, vlabel, normalize in tqdm(zip(preds, gt_points, gt_labels, gt_normalize)):
@@ -153,7 +152,8 @@ def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):
     for k in correct:
         print(k, ':')
         for key in correct[k]:
-            print('Val PCK @', bound, ',', key, ':', round(correct[k][key] / max(count[k][key], 1), 3), ', count:', count[k][key])
+            pck = correct[k][key] / max(count[k][key], 1)
+            print('Val PCK @ {:2f}, {} : {:3f}, count : {}'.format(round(bound, 2), key.rjust(8), round(pck,3), count[k][key]))
 
         print('\n')
 
@@ -233,7 +233,7 @@ def computeOks(preds, gt_points, gt_labels, gt_height, gt_width):
 
     print('\n')
 
-    return oks_list
+    # return mAP/bound_list.shape[0]
 
 # hourglasstensorflow
 class PCKEval():
