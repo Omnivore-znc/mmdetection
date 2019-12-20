@@ -23,7 +23,7 @@ def keypoints_eval(result_files,
             'human-points'
         ]
 
-    eval_type = 'oks'  # pck or oks
+    eval_types = ['oks', 'pck']  # pck or oks
 
     det_results = mmcv.load(result_files)
 
@@ -55,10 +55,10 @@ def keypoints_eval(result_files,
                 num_points+=1
 
 
-        if eval_type == 'pck':
+        if 'pck' in eval_types:
             normalize = np.sqrt(ann['height']**2+ann['width']**2)
             gt_normalize.append(normalize)
-        elif eval_type == 'oks':
+        if 'oks' in eval_types:
             gt_height.append(ann['height'])
             gt_width.append(ann['width'])
 
@@ -66,11 +66,14 @@ def keypoints_eval(result_files,
         # print(ann)
 
     print('num points:', num_points)
-    if eval_type=='pck':
+    if 'pck' in eval_types:
+        print('\nStarting evaluate PCK: \n')
         pck_eval(det_results, gt_points, gt_labels, gt_normalize)
-    elif eval_type=='oks':
+    if 'oks' in eval_types:
+        print('\nStarting evaluate OKS mAP: \n')
         computeOks(det_results, gt_points, gt_labels, gt_height, gt_width)
 
+    print('\nStarting evaluate Visibility Presicion: \n')
     visibility_cls_eval(det_results, gt_labels)
 
 

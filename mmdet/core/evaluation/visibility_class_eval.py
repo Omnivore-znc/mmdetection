@@ -57,11 +57,14 @@ def visibility_cls_eval(preds, gt_labels):
                 count_point_tp[j, v] += 1
 
 
-    header = ['id', 'joint', 'prec(v=0)', 'prec(v=1)', 'prec(v=2)', 'aprec']
+    header = ['id', 'joint', 'rec(v=0)', 'rec(v=1)', 'rec(v=2)', 'prec(v=0)', 'prec(v=1)', 'prec(v=2)', 'aRec/aPrec']
     table_data = [header]
 
     for k in range(num_keypoints):
         row_data = [k, JOINTS[k],
+                    round(count_point_tp[k, 0] / count_point_gt[k, 0], 3),
+                    round(count_point_tp[k, 1] / count_point_gt[k, 1], 3),
+                    round(count_point_tp[k, 2] / count_point_gt[k, 2], 3),
                     round(count_point_tp[k, 0] / count_point_pd[k, 0],3),
                     round(count_point_tp[k, 1] / count_point_pd[k, 1],3),
                     round(count_point_tp[k, 2] / count_point_pd[k, 2],3),
@@ -72,6 +75,9 @@ def visibility_cls_eval(preds, gt_labels):
 
     # 暂时总评价是采用总tp数/总pd数（即总gt数）， 而不是采用多类求平均
     table_data.append(['', 'total',
+                       round(np.sum(count_point_tp, axis=0)[0] / np.sum(count_point_gt, axis=0)[0], 3),
+                       round(np.sum(count_point_tp, axis=0)[1] / np.sum(count_point_gt, axis=0)[1], 3),
+                       round(np.sum(count_point_tp, axis=0)[2] / np.sum(count_point_gt, axis=0)[2], 3),
                        round(np.sum(count_point_tp, axis=0)[0] / np.sum(count_point_pd, axis=0)[0],3),
                        round(np.sum(count_point_tp, axis=0)[1] / np.sum(count_point_pd, axis=0)[1],3),
                        round(np.sum(count_point_tp, axis=0)[2] / np.sum(count_point_pd, axis=0)[2],3),

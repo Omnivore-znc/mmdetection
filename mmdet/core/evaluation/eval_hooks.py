@@ -124,7 +124,7 @@ class DistEvalPointmAPHook(DistEvalHook):
         gt_height = []
         gt_width = []
 
-        eval_type = 'oks'  # pck or oks
+        eval_types = ['oks', 'pck']  # pck or oks
 
         for i in range(len(self.dataset)):
             ann = self.dataset.get_ann_info(i)
@@ -147,10 +147,10 @@ class DistEvalPointmAPHook(DistEvalHook):
             gt_points.append(points)
             gt_labels.append(labels)
 
-            if eval_type == 'pck':
+            if 'pck' in eval_types:
                 normalize = np.sqrt(ann['height'] ** 2 + ann['width'] ** 2)
                 gt_normalize.append(normalize)
-            elif eval_type == 'oks':
+            if 'oks' in eval_types:
                 gt_height.append(ann['height'])
                 gt_width.append(ann['width'])
 
@@ -162,7 +162,7 @@ class DistEvalPointmAPHook(DistEvalHook):
         else:
             ds_name = self.dataset.CLASSES
 
-        if eval_type == 'pck':
+        if 'pck' in eval_types:
             pck_eval(
                 results,
                 gt_points,
@@ -170,7 +170,7 @@ class DistEvalPointmAPHook(DistEvalHook):
                 gt_normalize,
                 bound=0.5
             )
-        elif eval_type == 'oks':
+        if 'oks' in eval_types:
             computeOks(
                 results,
                 gt_points,
