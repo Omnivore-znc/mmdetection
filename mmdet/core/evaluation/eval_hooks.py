@@ -163,25 +163,31 @@ class DistEvalPointmAPHook(DistEvalHook):
             ds_name = self.dataset.CLASSES
 
         if 'pck' in eval_types:
-            pck_eval(
+            print('\nStarting evaluate PCK: \n')
+            total_pck = pck_eval(
                 results,
                 gt_points,
                 gt_labels,
                 gt_normalize,
-                bound=0.5
+                bound=0.05
             )
+            runner.log_buffer.output['PCK'] = total_pck
         if 'oks' in eval_types:
-            computeOks(
+            print('\nStarting evaluate OKS mAP: \n')
+            mean_ap, mean_oks = computeOks(
                 results,
                 gt_points,
                 gt_labels,
                 gt_height,
                 gt_width,
             )
-            visibility_cls_eval(results, gt_labels)
+            print('\nStarting evaluate Visibility Presicion: \n')
+            aprec_vis = visibility_cls_eval(results, gt_labels)
 
+            runner.log_buffer.output['OKS'] = mean_oks
+            runner.log_buffer.output['mAP'] = mean_ap
+            runner.log_buffer.output['Precision of visibility'] = aprec_vis
 
-            # runner.log_buffer.output['mAP'] = mean_ap
         runner.log_buffer.ready = True
 
 

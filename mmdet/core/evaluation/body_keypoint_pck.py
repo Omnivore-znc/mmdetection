@@ -158,10 +158,15 @@ def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):
     for k in correct:
         print(k, ':')
         for key in correct[k]:
+            # print(count[k][key])
             pck = correct[k][key] / max(count[k][key], 1)
             print('Val PCK @ {:2f}, {} : {:3f}, count : {}'.format(round(bound, 2), key.rjust(8), round(pck,3), count[k][key]))
 
         print('\n')
+
+    total_pck =  correct['all']['total'] / max(count['all']['total'], 1)
+
+    return total_pck
 
 def computeOks(preds, gt_points, gt_labels, gt_height, gt_width):
 
@@ -226,20 +231,22 @@ def computeOks(preds, gt_points, gt_labels, gt_height, gt_width):
 
     # print(oks_list_np.shape, bound_list.shape)
 
-    mAP = 0.0
+    mAP_sum = 0.0
 
     for bound in bound_list:
         num_oks_bound = np.count_nonzero(oks_list_np>bound)
         AP = num_oks_bound / oks_list_np.shape[0]
         print('Val AP @ {:.2f} : {:.3f}'.format(bound, AP))
 
-        mAP += AP
+        mAP_sum += AP
 
-    print('Val mAP : {:.3f}'.format(mAP/bound_list.shape[0]))
+
+    mAP = mAP_sum/bound_list.shape[0]
+    print('Val mAP : {:.3f}'.format(mAP))
 
     print('\n')
 
-    # return mAP/bound_list.shape[0]
+    return mAP, np.mean(oks_list)
 
 # hourglasstensorflow
 class PCKEval():

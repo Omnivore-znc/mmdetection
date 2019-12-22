@@ -112,10 +112,10 @@ def parse_args():
                         default='../configs_znc/blaze_body_keypoint.py',
                         help='test config file path')
     parser.add_argument('--checkpoint',
-                        default='../checkpoint/work_dirs/blaze_body_oks_map_test/latest.pth',
+                        default='../checkpoint/work_dirs/blaze_body_keypoint_rotate2/latest.pth',
                         help='checkpoint file')
     parser.add_argument('--out',
-                        default='../checkpoint/work_dirs/blaze_body_oks_map_test/result.pkl',
+                        default='../checkpoint/work_dirs/blaze_body_keypoint_rotate2/result.pkl',
                         help='output result file')
     parser.add_argument(
         '--json_out',

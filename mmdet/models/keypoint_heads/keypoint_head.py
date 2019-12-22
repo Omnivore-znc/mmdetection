@@ -9,7 +9,7 @@ from mmcv.cnn import normal_init
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox, force_fp32,
                         multi_apply, multiclass_nms)
 from ..builder import build_loss
-from ..losses import smooth_l1_loss
+from ..losses import smooth_l1_loss, smooth_l1_loss_ohkm, mse_loss_ohkm, mse_loss
 from ..registry import HEADS
 
 
@@ -80,18 +80,42 @@ class KeypointHead(nn.Module):
         return cls_preds, reg_preds
 
     def loss_single(self, cls_score, point_pred, labels, label_weights,
-                    point_targets, point_weights, num_total_cls, num_total_points, cfg):
+                    point_targets, point_weights, num_points, num_total_cls, num_total_points, batch_size, cfg):
+
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
 
         loss_cls = loss_cls_all.sum()/ num_total_cls
 
-        loss_point = smooth_l1_loss(
+        # loss_point = smooth_l1_loss(
+        #     point_pred,
+        #     point_targets,
+        #     point_weights,
+        #     beta=cfg.smoothl1_beta,
+        #     avg_factor=num_total_points)
+
+        # loss_point = mse_loss(
+        #     point_pred,
+        #     point_targets,
+        #     point_weights,
+        #     avg_factor=num_total_points)
+
+        # mse loss会直接爆炸
+        # loss_point = mse_loss_ohkm(
+        #     point_pred,
+        #     point_targets,
+        #     point_weights,
+        #     top_k=8)
+        #     # avg_factor=num_total_points)
+
+        loss_point_all = smooth_l1_loss_ohkm(
             point_pred,
             point_targets,
             point_weights,
-            beta=cfg.smoothl1_beta,
-            avg_factor=num_total_points)
+            num_points,
+            top_k=6)
+        loss_point = loss_point_all/batch_size
+
         return (loss_cls, loss_point)
 
     def loss(self,
@@ -136,6 +160,8 @@ class KeypointHead(nn.Module):
         #num_total_cls = torch.sum(all_label_weights)
         num_total_cls = torch.sum(all_label_weights)/self.num_points*2
         num_total_points = torch.sum(all_label_weights_tmp>0)
+        num_points = torch.sum(all_label_weights_tmp > 0, dim=1)
+
         (losses_cls, losses_point) = multi_apply(
             self.loss_single,
             all_cls_scores,
@@ -144,8 +170,10 @@ class KeypointHead(nn.Module):
             all_label_weights,
             all_point_targets,
             all_point_weights,
+            num_points,
             num_total_cls=num_total_cls,
             num_total_points=num_total_points,
+            batch_size=num_points.shape[0],
             cfg=cfg)
         return dict(loss_cls=losses_cls, loss_point=losses_point)
 

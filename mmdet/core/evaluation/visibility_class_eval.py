@@ -74,6 +74,7 @@ def visibility_cls_eval(preds, gt_labels):
         table_data.append(row_data)
 
     # 暂时总评价是采用总tp数/总pd数（即总gt数）， 而不是采用多类求平均
+    aPrec = round(np.sum(count_point_tp) / np.sum(count_point_pd),3)
     table_data.append(['', 'total',
                        round(np.sum(count_point_tp, axis=0)[0] / np.sum(count_point_gt, axis=0)[0], 3),
                        round(np.sum(count_point_tp, axis=0)[1] / np.sum(count_point_gt, axis=0)[1], 3),
@@ -81,9 +82,12 @@ def visibility_cls_eval(preds, gt_labels):
                        round(np.sum(count_point_tp, axis=0)[0] / np.sum(count_point_pd, axis=0)[0],3),
                        round(np.sum(count_point_tp, axis=0)[1] / np.sum(count_point_pd, axis=0)[1],3),
                        round(np.sum(count_point_tp, axis=0)[2] / np.sum(count_point_pd, axis=0)[2],3),
-                       round(np.sum(count_point_tp) / np.sum(count_point_pd),3)
+                       aPrec
                        # round(np.sum(count_point_tp) / np.sum(count_point_gt),3)
                        ])
+
     table = AsciiTable(table_data)
     table.inner_footing_row_border = True
     print(table.table)
+
+    return aPrec

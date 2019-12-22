@@ -74,7 +74,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=256,
-    workers_per_gpu=2,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -92,7 +92,7 @@ data = dict(
     #val=None,
     test=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'idx_list-21w_val_100.txt',
         img_prefix=data_root,
         pipeline=test_pipeline))
 # optimizer
@@ -109,7 +109,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=1,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -120,8 +120,8 @@ checkpoint_config = dict(interval=5)
 total_epochs = 200
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './checkpoint/work_dirs/blaze_body_oks_map_test'
+work_dir =  './checkpoint/work_dirs/blaze_body_oks_map_test_resume100_ohkm'
 load_from = None
-resume_from = './checkpoint/work_dirs/blaze_body_oks_map_test/latest.pth'
+resume_from = './checkpoint/work_dirs/blaze_body_oks_map_test/epoch_100.pth'
 # resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]
