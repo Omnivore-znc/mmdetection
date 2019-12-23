@@ -14,7 +14,8 @@ from mmcv.runner import get_dist_info, load_checkpoint
 
 from mmdet import datasets
 from mmdet.apis import init_dist
-from mmdet.core import coco_eval, results2json, wrap_fp16_model, keypoints_eval
+from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.core.evaluation import keypoints_eval
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -205,6 +206,7 @@ def main():
     rank, _ = get_dist_info()
 
     print(rank)
+
     if args.out and rank == 0:
         print('\nwriting results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
@@ -214,12 +216,10 @@ def main():
             if eval_types == ['proposal_fast']:
                 result_file = args.out
                 coco_eval(result_file, eval_types, dataset.coco)
-
             elif eval_types == ['human-points']:
                 result_file = args.out
                 test_dataset = mmcv.runner.obj_from_dict(cfg.data.test, datasets)
                 keypoints_eval(result_file, eval_types, test_dataset)
-
                 pass
             else:
                 if not isinstance(outputs[0], dict):

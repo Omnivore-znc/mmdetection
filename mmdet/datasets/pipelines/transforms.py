@@ -247,7 +247,7 @@ class Resize(object):
 
 
 @PIPELINES.register_module
-class RandomFlip2(object):
+class RandomFlip(object):
     """Flip the image & bbox & mask.
 
     If the input dict contains the key "flip", then the flag will be used,

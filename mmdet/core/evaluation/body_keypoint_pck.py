@@ -1,19 +1,13 @@
-import itertools
 import sys
 import mmcv
 import numpy as np
 import copy
-
-from terminaltables import AsciiTable
-from time import time, clock
-from .recall import eval_recalls
+from time import time
 from tqdm import tqdm
 
 
-def keypoints_eval(result_files,
-              result_types,
+def keypoints_eval(result_files, result_types,
               dataset,
-              # coco,
               max_dets=(100, 300, 1000),
               classwise=False):
 

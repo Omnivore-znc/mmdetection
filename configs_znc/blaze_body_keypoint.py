@@ -32,9 +32,10 @@ train_cfg = dict(
 test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
-data_root = '/data_point/keypoint_coco2017/'
+data_root = '/opt/space_host/data_xiaozu/keypoint_coco2017/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 #img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
+
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_point=True),
@@ -60,7 +61,7 @@ train_pipeline = [
          keep_ratio=True,
          center_padded=True),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='RandomFlip2', flip_ratio=0.5),
+    dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_points', 'gt_labels']),
 ]
@@ -82,7 +83,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=256,
+    imgs_per_gpu=32,
     workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
@@ -118,7 +119,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=1,
+    interval=5,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -129,7 +130,7 @@ checkpoint_config = dict(interval=5)
 total_epochs = 180
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912140000'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912200000'
 load_from = None
 resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]
