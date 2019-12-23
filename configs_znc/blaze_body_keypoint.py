@@ -54,6 +54,7 @@ train_pipeline = [
     dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=3, crop_ratio=0.5),
     dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=10, rotate_ratio=0.5),
     dict(type='Resize', img_scale=(input_width, input_height), keep_ratio=False),
+    dict(type='RandomErasePointV1', area_ratio_range=(0.02, 0.4), min_aspect_ratio=0.3, max_attempt=20, erase_ratio=0.7),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip2', flip_ratio=0.5),
     dict(type='DefaultFormatBundle'),
@@ -73,20 +74,20 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=256,
-    workers_per_gpu=4,
+    imgs_per_gpu= 1, #256,
+    workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
         times=1,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_train.txt',
+        ann_file= data_root + 'idx_list-21w_val_100.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'idx_list-21w_val_100.txt',
         img_prefix=data_root,
         pipeline=test_pipeline),
     #val=None,
@@ -122,6 +123,6 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir =  './checkpoint/work_dirs/blaze_body_oks_map_test_resume100_ohkm'
 load_from = None
-resume_from = './checkpoint/work_dirs/blaze_body_oks_map_test/epoch_100.pth'
-# resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
+# resume_from = './checkpoint/work_dirs/blaze_body_oks_map_test/epoch_100.pth'
+resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]

@@ -87,12 +87,12 @@ class KeypointHead(nn.Module):
 
         loss_cls = loss_cls_all.sum()/ num_total_cls
 
-        # loss_point = smooth_l1_loss(
-        #     point_pred,
-        #     point_targets,
-        #     point_weights,
-        #     beta=cfg.smoothl1_beta,
-        #     avg_factor=num_total_points)
+        loss_point = smooth_l1_loss(
+            point_pred,
+            point_targets,
+            point_weights,
+            beta=cfg.smoothl1_beta,
+            avg_factor=num_total_points)
 
         # loss_point = mse_loss(
         #     point_pred,
@@ -108,13 +108,13 @@ class KeypointHead(nn.Module):
         #     top_k=8)
         #     # avg_factor=num_total_points)
 
-        loss_point_all = smooth_l1_loss_ohkm(
-            point_pred,
-            point_targets,
-            point_weights,
-            num_points,
-            top_k=6)
-        loss_point = loss_point_all/batch_size
+        # loss_point_all = smooth_l1_loss_ohkm(
+        #     point_pred,
+        #     point_targets,
+        #     point_weights,
+        #     num_points,
+        #     top_k=6)
+        # loss_point = loss_point_all/batch_size
 
         return (loss_cls, loss_point)
 

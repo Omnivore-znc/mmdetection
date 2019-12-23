@@ -1,7 +1,7 @@
 from __future__ import division
 import argparse
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import os.path as osp
 import sys
@@ -31,7 +31,7 @@ def parse_args():
         help='the checkpoint file to resume from')
     parser.add_argument(
         '--validate',
-        default=True,
+        default=False,
         # action='store_true',
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
