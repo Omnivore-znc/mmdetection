@@ -14,6 +14,33 @@ from numpy import random
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
 
+def trans_visualize_keypoint(results,
+                             save_dir ):
+    # img8 = img.astype(np.uint8)
+    # cv2.imwrite("img8.jpg", img8)
+    # img8_tmp = img_tmp.astype(np.uint8)
+    # cv2.imwrite("img8_tmp.jpg",img8_tmp)
+    img_tmp = results['img'].copy()
+    #if results.hasattr("img_resize_shape"):
+    if "img_resize_shape" in results:
+        y_t = int((results['img_shape'][0] - results['img_resize_shape'][0]) / 2)
+        x_t = int((results['img_shape'][1] - results['img_resize_shape'][1]) / 2)
+    else:
+        x_t = 0
+        y_t = 0
+    for i in range(len(results['gt_points'])):
+        center = results['gt_points'][i]
+        lbl = results['gt_labels'][i]
+        if lbl == 1:
+            img_tmp = cv2.circle(img_tmp, (x_t + int(center[0]), y_t + int(center[1])), 3, (255, 0, 0), 2)
+        elif lbl == 2 and i%2!=0:
+            img_tmp = cv2.circle(img_tmp, (x_t + int(center[0]), y_t + int(center[1])), 3, (0, 255, 0), 2)
+        elif lbl == 2 and i%2==0:
+            img_tmp = cv2.circle(img_tmp, (x_t + int(center[0]), y_t + int(center[1])), 3, (0, 0, 255), 2)
+    #save_dir =
+    _, name = os.path.split(results['filename'])
+    save_path = os.path.join(save_dir, name)
+    cv2.imwrite(save_path, img_tmp)
 
 @PIPELINES.register_module
 class Resize(object):
@@ -165,18 +192,9 @@ class Resize(object):
             img_tmp[y_t:(y_t+img.shape[0]), x_t:(x_t+img.shape[1]),:] = img
             results['img'] = img_tmp
             results['img_shape'] = img_tmp.shape
-
-            ###todo
-            # img8 = img.astype(np.uint8)
-            # cv2.imwrite("img8.jpg", img8)
-            # img8_tmp = img_tmp.astype(np.uint8)
-            # cv2.imwrite("img8_tmp.jpg",img8_tmp)
-            save_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_pre'
-            _, name = os.path.split(results['filename'])
-            save_path = os.path.join(save_dir, name)
-            cv2.imwrite(save_path, img_tmp)
         else:
             results['img'] = img
+
 
     def _resize_bboxes(self, results):
         img_shape = results['img_shape']
@@ -223,16 +241,9 @@ class Resize(object):
         self._resize_masks(results)
         self._resize_points(results)
 
-        '''
-        # # todo
-        # print(sys._getframe())
-        # #print(sys._getframe().f_lineno )
-        # img = np.array( results['img'], results['img'].dtype)
-        # for i in range(len(results['gt_points'])):
-        #     center = results['gt_points'][i].astype(np.int)
-        #     cv2.circle(img,(center[0],center[1]),2,(0,0,255))
-        # cv2.imwrite("haha.jpg",img)
-        '''
+        ###todo
+        # trans_visualize_keypoint(results,
+        #                          '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_pre')
 
         return results
 
@@ -391,11 +402,11 @@ class RandomFlip(object):
                 if not is_flipped:
                     results[key], results['gt_labels'], is_flipped = self.point_flip(results[key],
                                                                   results['gt_labels'],
-                                                                  results['img_shape'])
+                                                                  results['img_resize_shape'])
                 else:
                     results[key], _, is_flipped = self.point_flip(results[key],
                                                                   None,
-                                                                  results['img_shape'])
+                                                                  results['img_resize_shape'])
         return results
 
     def __repr__(self):

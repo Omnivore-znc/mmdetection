@@ -19,10 +19,10 @@
 # #echo "$(pwd)"
 
 
-cd /jayden/mmdetection
+cd /opt/space_host/zhongnanchang/mmdet/mmdetection
 #export LD_LIBRARY_PATH=/usr/local/cuda-9.0/lib64
 #cd ..
 python setup.py develop
 chmod 777 ./tools/ -R
-export CUDA_VISIBLE_DEVICES=2,3,4,5
+export CUDA_VISIBLE_DEVICES=2,3,6,7
 ./tools/dist_train.sh ./configs_znc/blaze_body_keypoint.py 4

@@ -40,11 +40,11 @@ train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_point=True),
     # dict(
-        # type='PhotoMetricDistortion',
-        # brightness_delta=32,
-        # contrast_range=(0.5, 1.5),
-        # saturation_range=(0.5, 1.5),
-        # hue_delta=18),
+    #     type='PhotoMetricDistortion',
+    #     brightness_delta=32,
+    #     contrast_range=(0.5, 1.5),
+    #     saturation_range=(0.5, 1.5),
+    #     hue_delta=18),
     # dict(
     #     type='Expand',
     #     mean=img_norm_cfg['mean'],
@@ -62,7 +62,7 @@ train_pipeline = [
          center_padded=False),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Pad', size_divisor=16),
+    #dict(type='RandomFlip', flip_ratio=1.0), #todo
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_points', 'gt_labels']),
 ]
@@ -85,7 +85,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=256,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -108,7 +108,7 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.06, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -131,7 +131,8 @@ checkpoint_config = dict(interval=5)
 total_epochs = 180
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912200000'
 load_from = None
-resume_from = None
+resume_from = None #'./checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/latest.pth'
 workflow = [('train', 1)]
+

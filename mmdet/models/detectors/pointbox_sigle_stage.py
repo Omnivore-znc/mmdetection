@@ -6,6 +6,31 @@ from ..registry import DETECTORS
 from .single_stage import SingleStageDetector
 from .. import builder
 
+def model_visualize_keypoints(img,
+                           img_metas,
+                           gt_points,
+                           gt_labels,
+                           save_dir):
+    for m in range(len(img_metas)):
+        meta = img_metas[m]
+        ydt = int((meta['img_shape'][0] - meta['img_resize_shape'][0]) / 2)
+        xdt = int((meta['img_shape'][1] - meta['img_resize_shape'][1]) / 2)
+        img_tmp = np.array(img[m].cpu().numpy().transpose(1, 2, 0).astype(np.uint8))
+        points_tmp = gt_points[m].cpu().numpy().astype(np.int)
+        labels_tmp = gt_labels[m].cpu().numpy().astype(np.int)
+        for i in range(len(points_tmp)):
+            center = points_tmp[i]
+            if labels_tmp[i] == 1:
+                img_tmp = cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (255, 0, 0), 2)
+            elif labels_tmp[i] == 2 and i%2!=0:
+                img_tmp = cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 255, 0), 2)
+            elif labels_tmp[i] == 2 and i%2==0:
+                img_tmp = cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 0, 255), 2)
+        #save_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_post'
+        _, name = os.path.split(meta['filename'])
+        save_path = os.path.join(save_dir, name)
+        cv2.imwrite(save_path, img_tmp)
+
 @DETECTORS.register_module
 class PointBoxSingleStageDetector(SingleStageDetector):
 
@@ -49,29 +74,15 @@ class PointBoxSingleStageDetector(SingleStageDetector):
                       gt_labels,
                       gt_bboxes=None,
                       gt_bboxes_ignore=None):
-        '''
-        # # todo
-        #print(sys._getframe())
-        #print(sys._getframe().f_lineno )
-        # for m in range(len(img_metas)):
-        #     meta = img_metas[m]
-        #     ydt = int((meta['img_shape'][0] - meta['img_resize_shape'][0]) / 2)
-        #     xdt = int((meta['img_shape'][1] - meta['img_resize_shape'][1]) / 2)
-        #     img_tmp =  np.array(img[m].cpu().numpy().transpose(1,2,0).astype(np.uint8))
-        #     points_tmp = gt_points[m].cpu().numpy().astype(np.int)
-        #     labels_tmp = gt_labels[m].cpu().numpy().astype(np.int)
-        #     for i in range(len(points_tmp)):
-        #         center = points_tmp[i]
-        #         # if labels_tmp[i]==0:
-        #         #     cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 255, 0))
-        #         # else:
-        #         #     cv2.circle(img_tmp, (xdt + center[0], ydt + center[1]), 3, (0, 0, 255))
-        #     save_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_post'
-        #     _,name = os.path.split(meta['filename'])
-        #     save_path = os.path.join(save_dir,name)
-        #     cv2.imwrite(save_path,img_tmp)
-        '''
 
+        # # todo
+        # # print(sys._getframe())
+        # # print(sys._getframe().f_lineno )
+        # model_visualize_keypoints( img,
+        #                               img_metas,
+        #                               gt_points,
+        #                               gt_labels,
+        #                               '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_post')
 
         x = self.extract_feat(img)
         losses_pt = None

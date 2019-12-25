@@ -1,11 +1,15 @@
 import os.path as osp
 import warnings
+import os
 
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 
 from ..registry import PIPELINES
+
+from .transforms import trans_visualize_keypoint
 
 
 @PIPELINES.register_module
@@ -82,6 +86,10 @@ class LoadAnnotations(object):
         results['gt_points_ignore'] = results['ann_info'].get('points_ignore', None)
         results['gt_points'] = results['ann_info']['points']
         results['point_fields'].extend(['gt_points','gt_points_ignore'])
+
+        ## todo
+        #trans_visualize_keypoint(results,'/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_init')
+
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
