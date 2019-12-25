@@ -1,69 +1,12 @@
+import itertools
 import sys
 import mmcv
 import numpy as np
 import copy
-from time import time
+
+from terminaltables import AsciiTable
+from time import time, clock
 from tqdm import tqdm
-
-
-def keypoints_eval(result_files, result_types,
-              dataset,
-              max_dets=(100, 300, 1000),
-              classwise=False):
-
-    for res_type in result_types:
-        assert res_type in [
-            'human-points'
-        ]
-
-    eval_type = 'pck'  # pck or oks
-
-    det_results = mmcv.load(result_files)
-
-    # num_img x num_obj_per_img x 17 x 3
-    # print(len(det_results), len(det_results[0]), det_results[0][0].shape)
-    # print(det_results)
-
-
-    gt_points = []
-    gt_labels = []
-    gt_normalize = []
-    gt_height = []
-    gt_width = []
-    # print(len(dataset))
-
-    num_points = 0
-
-    for i in tqdm(range(len(dataset))):
-        # print(i)
-        img = dataset.load_annotations
-        ann = dataset.get_ann_info(i)
-        points = ann['points']
-        labels = ann['labels']
-        gt_points.append(points)
-        gt_labels.append(labels)
-
-        for v in labels:
-            if v==1 or v==2:
-                num_points+=1
-
-
-        if eval_type == 'pck':
-            normalize = np.sqrt(ann['height']**2+ann['width']**2)
-            gt_normalize.append(normalize)
-        elif eval_type == 'oks':
-            gt_height.append(ann['height'])
-            gt_width.append(ann['width'])
-
-        # print(type(points))
-        # print(ann)
-
-    print('num points:', num_points)
-    if eval_type=='pck':
-        pck_eval(det_results, gt_points, gt_labels, gt_normalize)
-    elif eval_type=='oks':
-        computeOks(det_results, gt_points, gt_labels, gt_height, gt_width)
-
 
 def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):
     """
@@ -146,10 +89,15 @@ def pck_eval(preds, gt_points, gt_labels, gt_normalize, bound=0.05):
     for k in correct:
         print(k, ':')
         for key in correct[k]:
+            # print(count[k][key])
             pck = correct[k][key] / max(count[k][key], 1)
             print('Val PCK @ {:2f}, {} : {:3f}, count : {}'.format(round(bound, 2), key.rjust(8), round(pck,3), count[k][key]))
 
         print('\n')
+
+    total_pck =  correct['all']['total'] / max(count['all']['total'], 1)
+
+    return total_pck
 
 def computeOks(preds, gt_points, gt_labels, gt_height, gt_width):
 
@@ -214,20 +162,22 @@ def computeOks(preds, gt_points, gt_labels, gt_height, gt_width):
 
     # print(oks_list_np.shape, bound_list.shape)
 
-    mAP = 0.0
+    mAP_sum = 0.0
 
     for bound in bound_list:
         num_oks_bound = np.count_nonzero(oks_list_np>bound)
         AP = num_oks_bound / oks_list_np.shape[0]
         print('Val AP @ {:.2f} : {:.3f}'.format(bound, AP))
 
-        mAP += AP
+        mAP_sum += AP
 
-    print('Val mAP : {:.3f}'.format(mAP/bound_list.shape[0]))
+
+    mAP = mAP_sum/bound_list.shape[0]
+    print('Val mAP : {:.3f}'.format(mAP))
 
     print('\n')
 
-    # return mAP/bound_list.shape[0]
+    return mAP, np.mean(oks_list)
 
 # hourglasstensorflow
 class PCKEval():

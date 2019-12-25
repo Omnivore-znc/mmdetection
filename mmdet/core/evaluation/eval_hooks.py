@@ -14,6 +14,7 @@ from mmdet import datasets
 from .coco_utils import fast_eval_recall, results2json
 from .mean_ap import eval_map
 from .body_keypoint_pck import pck_eval, computeOks
+from .visibility_class_eval import visibility_cls_eval
 
 
 class DistEvalHook(Hook):
@@ -123,7 +124,7 @@ class DistEvalPointmAPHook(DistEvalHook):
         gt_height = []
         gt_width = []
 
-        eval_type = 'oks'  # pck or oks
+        eval_types = ['oks', 'pck']  # pck or oks
 
         for i in range(len(self.dataset)):
             ann = self.dataset.get_ann_info(i)
@@ -146,10 +147,10 @@ class DistEvalPointmAPHook(DistEvalHook):
             gt_points.append(points)
             gt_labels.append(labels)
 
-            if eval_type == 'pck':
+            if 'pck' in eval_types:
                 normalize = np.sqrt(ann['height'] ** 2 + ann['width'] ** 2)
                 gt_normalize.append(normalize)
-            elif eval_type == 'oks':
+            if 'oks' in eval_types:
                 gt_height.append(ann['height'])
                 gt_width.append(ann['width'])
 
@@ -161,24 +162,32 @@ class DistEvalPointmAPHook(DistEvalHook):
         else:
             ds_name = self.dataset.CLASSES
 
-        if eval_type == 'pck':
-            pck_eval(
+        if 'pck' in eval_types:
+            print('\nStarting evaluate PCK: \n')
+            total_pck = pck_eval(
                 results,
                 gt_points,
                 gt_labels,
                 gt_normalize,
-                bound=0.5
+                bound=0.05
             )
-        elif eval_type == 'oks':
-            computeOks(
+            runner.log_buffer.output['PCK'] = total_pck
+        if 'oks' in eval_types:
+            print('\nStarting evaluate OKS mAP: \n')
+            mean_ap, mean_oks = computeOks(
                 results,
                 gt_points,
                 gt_labels,
                 gt_height,
                 gt_width,
             )
+            print('\nStarting evaluate Visibility Presicion: \n')
+            aprec_vis = visibility_cls_eval(results, gt_labels)
 
-            # runner.log_buffer.output['mAP'] = mean_ap
+            runner.log_buffer.output['OKS'] = mean_oks
+            runner.log_buffer.output['mAP'] = mean_ap
+            runner.log_buffer.output['Precision of visibility'] = aprec_vis
+
         runner.log_buffer.ready = True
 
 
