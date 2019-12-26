@@ -32,16 +32,6 @@ def visualize_results(points, img_path, save_path):
     img = cv2.resize(img, (0, 0), fx=enlarge, fy=enlarge)
     points_tmp[:,:2] = points_tmp[:,:2]*enlarge
 
-    for i in range(points_tmp.size()[0]):
-        if points_tmp[i,2]==1:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 0, 255), thickness=2)
-        elif points_tmp[i,2]==2:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (255, 0, 0), thickness=2)
-        elif points_tmp[i,2]!=0:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 255), thickness=2)
-        else:
-            cv2.circle(img, (int(points_tmp[i,0]), int(points_tmp[i,1])), 3, (0, 255, 0), thickness=2)
-
     #left_ankle - left_knee
     idx_0,idx_1 = 16, 14
     draw_line(img, points_tmp,idx_0,idx_1)
@@ -98,6 +88,23 @@ def visualize_results(points, img_path, save_path):
     idx_0, idx_1 = 5, 7
     draw_line(img, points_tmp, idx_0, idx_1)
 
+    ###
+    for i in range(points_tmp.size()[0]):
+        if points_tmp[i, 2] == 1 and i % 2 == 1:
+            cv2.circle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])), 3, (0, 0, 255), thickness=2)
+        elif points_tmp[i, 2] == 1 and i % 2 == 0:
+            cv2.rectangle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])),
+                          (int(points_tmp[i, 0]) + 10, int(points_tmp[i, 1]) + 10), (0, 0, 255))
+        elif points_tmp[i, 2] == 2 and i % 2 == 1:
+            cv2.circle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])), 3, (255, 0, 0), thickness=2)
+        elif points_tmp[i, 2] == 2 and i % 2 == 0:
+            cv2.rectangle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])),
+                          (int(points_tmp[i, 0]) + 10, int(points_tmp[i, 1]) + 10), (255, 0, 0))
+        elif points_tmp[i, 2] == 0:
+            cv2.circle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])), 3, (0, 255, 0), thickness=2)
+        else:
+            cv2.circle(img, (int(points_tmp[i, 0]), int(points_tmp[i, 1])), 3, (0, 255, 255), thickness=2)
+
     #dir_name,file_name = os.path.split(img_path)
     #dst_path = os.path.join(save_path,file_name)
     cv2.imwrite(save_path,img)
@@ -122,6 +129,8 @@ def runit0(model_config, weights, image_dir, out_dir):
                 print('{}: {}'.format(run_num,filename))
                 if run_num<1:
                     return
+                if run_num%10==0:
+                    print('run_num = '.format(run_num))
 def runit1(model_config, weights, image_list, out_dir):
     model = inference.init_detector(model_config, weights)
     img_dir,_ = os.path.split(image_list)
@@ -150,15 +159,11 @@ if __name__=='__main__':
     model_config = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/blaze_body_keypoint.py'
     model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/epoch_180.pth'
     out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/results'
-    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
-    
-    '''
-    model_config = '../configs_znc/blaze_body_keypoint.py'
-    model_weight = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/epoch_100.pth'
-    out_dir = '../checkpoint/work_dirs/blaze_body_keypoint_crop_rotate2/vis_result'
-    img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
-    '''
 
+    img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
+    runit0(model_config, model_weight, img_dir0, out_dir)
+
+    img_dir0 = '/opt/space_host/data_xiaozu/person_body'
     runit0(model_config, model_weight, img_dir0, out_dir)
 
     img_list = '/opt/space_host/data_xiaozu/keypoint_coco2017/idx_list-21w_train.txt'
