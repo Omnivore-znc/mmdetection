@@ -72,7 +72,7 @@ def initialize(module):
         nn.init.constant_(module.bias.data, 0)
 
 @BACKBONES.register_module
-class BlazeFace(nn.Module):
+class BlazeNet(nn.Module):
     """Constructs a BlazeFace model
     the original paper
     https://sites.google.com/view/perception-cv4arvr/blazeface
@@ -83,7 +83,7 @@ class BlazeFace(nn.Module):
                  input_height=128,
                  num_single=5,
                  num_double=6):
-        super(BlazeFace, self).__init__()
+        super(BlazeNet, self).__init__()
 
         self.input_width = input_width
         self.input_height = input_height
@@ -127,13 +127,6 @@ class BlazeFace(nn.Module):
             self.features.add_module('double_block_{}'.format(idx_single),BlazeBlock(96, 24, 96))
         else:
             raise "Only support 6 double blaze blocks now."
-
-        # initial fc
-        input = torch.randn(1, 3, self.input_height, self.input_width)
-        h = self.features(input)
-        h = h.view(h.size(0), -1)
-        print('BlazeFace ouput size = {}, size[1] = {}'.format(h.size(), h.size()[1]))
-        self.num_fc_pre = h.size()[1]
 
         self.apply(initialize)
 
