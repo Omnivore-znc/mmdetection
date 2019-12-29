@@ -12,6 +12,7 @@ model = dict(
         type='ResNetWH',
         depth=18,
         num_stages=4,
+        strides=(2, 2, 2, 2),
         out_indices=(3,),
         #frozen_stages=1,
         input_width = input_width,

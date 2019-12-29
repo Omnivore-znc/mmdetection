@@ -156,9 +156,9 @@ def runit1(model_config, weights, image_list, out_dir):
             run_num -= 1
 
 if __name__=='__main__':
-    model_config = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/blaze_body_keypoint.py'
-    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/epoch_180.pth'
-    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio/results'
+    model_config = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/resnet_body_keypoint.py'
+    model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/epoch_300.pth'
+    out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/results'
 
     img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
     runit0(model_config, model_weight, img_dir0, out_dir)

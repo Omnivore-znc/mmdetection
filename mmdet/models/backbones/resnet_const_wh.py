@@ -7,7 +7,7 @@ class ResNetWH(ResNet):
                  depth,
                  in_channels=3,
                  num_stages=4,
-                 strides=(1, 2, 2, 2),
+                 strides=(2, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
                  out_indices=(3,),
                  style='pytorch',
