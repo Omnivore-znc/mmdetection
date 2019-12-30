@@ -4,7 +4,7 @@ from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
 from .loading import LoadAnnotations, LoadImageFromFile, LoadProposals
 from .test_aug import MultiScaleFlipAug
 from .transforms import (Albu, Expand, MinIoURandomCrop, Normalize, Pad,
-                         PhotoMetricDistortion, RandomCrop, RandomCropPoint, RandomFlip, Resize,
+                         PhotoMetricDistortion, RandomCrop, RandomCropPoint, RandomFlip, RandomErasePointV2, RandomRotatePoint, Resize,
                          SegResizeFlipPadRescale)
 
 __all__ = [
@@ -12,5 +12,5 @@ __all__ = [
     'Transpose', 'Collect', 'LoadAnnotations', 'LoadImageFromFile',
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'Pad',
     'RandomCrop', 'RandomCropPoint', 'Normalize', 'SegResizeFlipPadRescale', 'MinIoURandomCrop',
-    'Expand', 'PhotoMetricDistortion', 'Albu'
+    'Expand', 'PhotoMetricDistortion', 'Albu', 'RandomCropPoint', 'RandomErasePointV2', 'RandomRotatePoint',
 ]

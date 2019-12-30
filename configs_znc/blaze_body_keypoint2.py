@@ -19,7 +19,7 @@ model = dict(
         type='KeypointHead',
         num_classes=num_cls,
         num_points=num_points,
-        num_fcs=2, #3,
+        num_fcs=3,
         out_channels_fc=1024,
         target_means=(0.5, 0.5),
         target_stds=(0.05, 0.05),
@@ -57,6 +57,7 @@ train_pipeline = [
 
     dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=20, rotate_ratio=0.5),
     dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=3, crop_ratio=0.5),
+    dict(type='RandomErasePointV2', area_ratio_range=(0.01, 0.1), min_aspect_ratio=0.5, max_attempt=30, erase_ratio=0.5),
     dict(type='Resize', img_scale=(input_width, input_height),
          keep_ratio=False,
          center_padded=False),
@@ -88,7 +89,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
-        times=2,
+        times=3,
         dataset=dict(
             type=dataset_type,
         ann_file= data_root + 'idx_list-21w_train.txt',
@@ -116,7 +117,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[100, 150, 170])
+    step=[150, 200, 230, 250])
 checkpoint_config = dict(interval=5)
 # yapf:disable
 log_config = dict(
@@ -128,10 +129,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 200
+total_epochs = 300
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2'
+work_dir =  './tools/work_dirs/blaze_point/blaze_rotate_crop_flip_erase_lr0.06_fc3'
 load_from = None
-resume_from = './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2/latest.pth'
+resume_from = None #'./tools/work_dirs/blaze_point/blaze_rotate_crop_flip_erase_lr0.06_fc3/latest.pth'
 workflow = [('train', 1)]

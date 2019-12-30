@@ -1,8 +1,7 @@
 from __future__ import division
 import argparse
 import os
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import os.path as osp
 import sys
@@ -20,8 +19,8 @@ from mmdet.models import build_detector
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     # parser.add_argument('config', help='train config file path')
-    parser.add_argument('config',
-                        # default='../configs_znc/blaze_body_keypoint.py',
+    parser.add_argument('--config',
+                        default='../configs_znc/blaze_body_keypoint2.py',
                         help='train config file path')
     parser.add_argument('--work_dir',
                         # default='./checkpoint/work_dirs/blaze_body_keypoint/epoch_50.pth',
@@ -32,8 +31,8 @@ def parse_args():
         help='the checkpoint file to resume from')
     parser.add_argument(
         '--validate',
-        # default=True,
-        action='store_true',
+        default=False,
+        # action='store_true',
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
         '--gpus',
@@ -44,7 +43,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
         '--launcher',
-        choices=['none', 'pytorch', 'slurm', 'mpi'],
+        # choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
@@ -87,8 +86,6 @@ def main():
     # init logger before other steps
     logger = get_root_logger(cfg.log_level)
     logger.info('Distributed training: {}'.format(distributed))
-    logger.info('MMDetection Version: {}'.format(__version__))
-    logger.info('Config: {}'.format(cfg.text))
 
     # set random seeds
     if args.seed is not None:

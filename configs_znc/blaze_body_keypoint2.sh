@@ -1,4 +1,4 @@
-#!/bin/bash
+# #!/bin/bash
 # # >>> conda initialize >>>
 # # !! Contents within this block are managed by 'conda init' !!
 # __conda_setup="$('/root/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -22,5 +22,5 @@
 #cd ..
 #python setup.py develop
 #chmod 777 ./tools/ -R
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-./tools/dist_train.sh ./configs_znc/blaze_body_keypoint.py 4 --validate
+export CUDA_VISIBLE_DEVICES=0,3,4,5
+./tools/dist_train2.sh ./configs_znc/blaze_body_keypoint2.py 4 --validate

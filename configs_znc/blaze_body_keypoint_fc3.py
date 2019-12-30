@@ -19,7 +19,7 @@ model = dict(
         type='KeypointHead',
         num_classes=num_cls,
         num_points=num_points,
-        num_fcs=2, #3,
+        num_fcs=3,
         out_channels_fc=1024,
         target_means=(0.5, 0.5),
         target_stds=(0.05, 0.05),
@@ -133,5 +133,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir =  './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2'
 load_from = None
-resume_from = './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2/latest.pth'
+resume_from = None
 workflow = [('train', 1)]

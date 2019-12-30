@@ -641,6 +641,90 @@ class RandomCropPoint(object):
         return self.__class__.__name__ + '(crop_size={})'.format(
             self.crop_size)
 
+
+@PIPELINES.register_module
+class RandomErasePointV2(object):
+    """Random Erase.
+    https://github.com/hysts/pytorch_random_erasing/blob/master/dataloader.py
+
+    Random Erase V2:
+    https://github.com/zhunzhong07/Random-Erasing/blob/master/utils/transforms.py
+
+    Args:
+        area_ratio_range (tuple): Min and Max ratio range of Erase, (sl, sh).
+        min_aspect_ratio:
+        max_attempt
+
+    1. 如果没有遮挡v=2的关键点，则跳过！！
+    2. 遮挡的点坐标设置为0， 可见度v=0
+
+    """
+
+    def __init__(self, area_ratio_range, min_aspect_ratio, max_attempt, erase_ratio):
+
+        self.area_ratio_range = area_ratio_range
+        self.min_aspect_ratio = min_aspect_ratio
+        self.max_attempt = max_attempt
+        self.erase_ratio = erase_ratio
+
+    def __call__(self, results):
+
+        if np.random.rand()>self.erase_ratio:
+            return results
+
+        sl, sh = self.area_ratio_range
+        rl, rh = self.min_aspect_ratio, 1. / self.min_aspect_ratio
+
+        image = results['img'].copy()
+        h, w = image.shape[:2]
+        image_area = h * w
+
+        for _ in range(self.max_attempt):
+            mask_area = np.random.uniform(sl, sh) * image_area
+            aspect_ratio = np.random.uniform(rl, rh)
+            mask_h = int(np.sqrt(mask_area * aspect_ratio))
+            mask_w = int(np.sqrt(mask_area / aspect_ratio))
+
+
+
+            if mask_w < w and mask_h < h:
+                x0 = np.random.randint(0, w - mask_w)
+                y0 = np.random.randint(0, h - mask_h)
+                x1 = x0 + mask_w
+                y1 = y0 + mask_h
+
+                # crop points accordingly and clip to the image boundary
+                # for key in results.get('point_fields', []):
+                points = results['gt_points']
+                gt_labels = results['gt_labels']
+
+                invalid_inds = ((points[:, 0]>x0) & (points[:, 0]<x1)) & \
+                               ((points[:, 1]>y0) & (points[:, 1]<y1))
+                # & (gt_labels[:]==2)
+                invalid_inds_vis2 = invalid_inds & (gt_labels[:]==2)
+
+                # if 'gt_labels' in results:
+                num_invalid = np.sum(invalid_inds_vis2)
+                if num_invalid<1:
+                    continue
+
+                # image[y0:y1, x0:x1] = np.random.uniform(0, 1)
+                # image[y0:y1, x0:x1] = np.random.randint(0, 255)
+                image[y0:y1, x0:x1] = np.random.randint(0, high=255, size=(y1 - y0, x1 - x0, 3))
+
+                gt_labels[invalid_inds] = 0
+
+                results['gt_labels'] = gt_labels
+                results['img'] = image
+
+                break
+
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(area_ratio_range={})'.format(
+            self.area_ratio_range)
+
 @PIPELINES.register_module
 class RandomCrop(object):
     """Random crop the image & bboxes & masks.
