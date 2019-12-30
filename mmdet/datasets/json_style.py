@@ -1,5 +1,6 @@
 import os.path as osp
 
+import json
 import mmcv
 import numpy as np
 
@@ -8,10 +9,10 @@ from .registry import DATASETS
 
 
 @DATASETS.register_module
-class TXTDataset(CustomDataset):
+class JSONDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):
-        super(TXTDataset, self).__init__(**kwargs)
+        super(JSONDataset, self).__init__(**kwargs)
         self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
 
@@ -19,36 +20,26 @@ class TXTDataset(CustomDataset):
         img_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:
-            filename = 'IMAGE_ANNOTATIONS/{}.jpg'.format(img_id)
-            ann_path = '{}/IMAGE_ANNOTATIONS/{}.json'.format(self.img_prefix,img_id)
-            ## image width-height
-            img_w = 0
-            img_h = 0
+            filename = 'JPEGImages/{}.jpg'.format(img_id)
+            ann_path = '{}/Annotations/{}.json'.format(self.img_prefix,img_id)
+
             with open(ann_path) as annfile:
-                # while 1:
-                #     wh = annfile.readline()
-                #     if len(wh.split(' ')) != 2:
-                #         continue
-                num_keypt = 0
-                while 1:
-                    num = annfile.readline().split(' ')
-                    if len(num) == 2:
-                        img_w = int(num[0])
-                        img_h = int(num[1])
-                        assert img_w > 0 and img_w < 2000 and img_h > 0 and img_h < 2000
-                    if len(num) == 1:
-                        num = num[0]
-                        if int(num) > 0 and int(num) < 500:
-                            num_keypt = int(num)
-                            break
+
+                ann = json.load(annfile)
+
+                img_w = ann['image_w']
+                img_h = ann['image_h']
+                assert img_w > 0 and img_w < 2000 and img_h > 0 and img_h < 2000
+
+
+                # 暂时先按coco17点进行训练
+                num_keypt = 17
+
                 if num_keypt == 0:
                     raise "keypoint num invalid in file {}".format(ann_path)
-                num_keypt_valid = 0
-                while 1:
-                    num = annfile.readline()
-                    if int(num) >= 0 and int(num) < 100:
-                        num_keypt_valid = int(num)
-                        break
+
+                num_keypt_valid = ann['num_keypoints']
+
             img_infos.append(
                 dict(id=img_id, filename=filename, width=img_w, height=img_h, num_keypt_valid=num_keypt_valid))
         return img_infos
@@ -57,43 +48,25 @@ class TXTDataset(CustomDataset):
         img_id = self.img_infos[idx]['id']
         img_w = self.img_infos[idx]['width']
         img_h = self.img_infos[idx]['height']
-        txt_path = osp.join(self.img_prefix, 'IMAGE_ANNOTATIONS',
-                            '{}.txt'.format(img_id))
+
+        num_keypt_valid = self.img_infos[idx]['num_keypt_valid']
+        num_keypt = 17
+
+        json_path = osp.join(self.img_prefix, 'Annotations',
+                            '{}.json'.format(img_id))
         points = []
         labels = []
         points_ignore = []
         labels_ignore = []
-        with open(txt_path) as annfile:
-            num_keypt = 0
-            while 1:
-                num = annfile.readline().split(' ')
-                if len(num) == 2:
-                    continue
-                if len(num)==1:
-                    num = num[0]
-                    if int(num)>0 and int(num) < 500:
-                        num_keypt = int(num)
-                        break
-            if num_keypt == 0:
-                raise "keypoint num invalid in file {}".format(txt_path)
+        with open(json_path) as annfile:
 
-            num_keypt_valid = 0
-            while 1:
-                num = annfile.readline()
-                if int(num) >= 0 and int(num) < 100:
-                    num_keypt_valid = int(num)
-                    break
+            # 改成json
+            ann = json.load(annfile)
+            points_v = ann['keypoints']
 
-            #ann.append(num_keypt)
-            #ann.append(num_keypt_valid)
             for i in range(num_keypt):
-                while 1:
-                    line = annfile.readline()
-                    ele_arr = line.split(' ')
-                    if len(ele_arr) == 3:
-                        point = [int(float(ele_arr[0]) + 0.5), int(float(ele_arr[1]) + 0.5)]
-                        labels.append(int(ele_arr[2]))
-                        break
+                point = [int(points_v[3*i] + 0.5), int(points_v[3*i+1] + 0.5)]
+                labels.append(int(points_v[3*i+2]))
                 points.append(point)
             assert (len(points) == (num_keypt))
             assert (len(labels) == num_keypt)

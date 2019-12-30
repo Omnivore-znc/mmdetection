@@ -32,7 +32,7 @@ train_cfg = dict(
 test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
-data_root = '/data_point/keypoint_coco2017/'
+data_root = '/data_point/keypoint_coco2017/augmentation+test/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=False)
 #img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
 
@@ -92,19 +92,19 @@ data = dict(
         times=3,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_train.txt',
+        ann_file= data_root + 'train_coco_keypoints_aug.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
         pipeline=test_pipeline),
     #val=None,
     test=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
         pipeline=test_pipeline))
 # optimizer
