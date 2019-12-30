@@ -1,4 +1,5 @@
-import sys
+import os
+import torch
 import numpy as np
 import os
 import cv2
@@ -46,7 +47,11 @@ class PointBoxSingleStageDetector(SingleStageDetector):
                                         test_cfg, pretrained)
         if point_head is not None:
             self.point_head = builder.build_head(point_head)
-            self.point_head.build_fc(self.backbone.num_fc_pre)
+            input = torch.randn(1, 3, backbone.input_height, backbone.input_width)
+            h = self.extract_feat(input)
+            h = h.view(h.size(0), -1)
+            print('BlazeFace ouput size = {}, size[1] = {}'.format(h.size(), h.size()[1]))
+            self.point_head.build_fc(h.size()[1])
 
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
@@ -85,6 +90,8 @@ class PointBoxSingleStageDetector(SingleStageDetector):
         #                               '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_post')
 
         x = self.extract_feat(img)
+        if isinstance(x,tuple):
+            x = x[0]
         losses_pt = None
         if self.with_bbox:
             # outs = self.bbox_head(x)

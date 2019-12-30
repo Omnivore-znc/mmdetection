@@ -9,17 +9,21 @@ model = dict(
     #pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
     pretrained=None,
     backbone=dict(
-        type='BlazeNet',
-        input_width=input_width,
-        input_height=input_height,
-        num_single=5,
-        num_double=6),
+        type='ResNetWH',
+        depth=18,
+        num_stages=4,
+        strides=(2, 2, 2, 2),
+        out_indices=(3,),
+        #frozen_stages=1,
+        input_width = input_width,
+        input_height = input_height,
+        style='pytorch'),
     neck=None,
     point_head=dict(
         type='KeypointHead',
         num_classes=num_cls,
         num_points=num_points,
-        num_fcs=2, #3,
+        num_fcs=3,
         out_channels_fc=1024,
         target_means=(0.5, 0.5),
         target_stds=(0.05, 0.05),
@@ -32,7 +36,7 @@ train_cfg = dict(
 test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
-data_root = '/data_point/keypoint_coco2017/'
+data_root = '/opt/space_host/data_xiaozu/keypoint_coco2017/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=False)
 #img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
 
@@ -55,8 +59,8 @@ train_pipeline = [
     #     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
     #     min_crop_size=0.3),
 
-    dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=20, rotate_ratio=0.5),
     dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=3, crop_ratio=0.5),
+    dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=10, rotate_ratio=0.5),
     dict(type='Resize', img_scale=(input_width, input_height),
          keep_ratio=False,
          center_padded=False),
@@ -88,7 +92,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
-        times=2,
+        times=1,
         dataset=dict(
             type=dataset_type,
         ann_file= data_root + 'idx_list-21w_train.txt',
@@ -117,10 +121,10 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
     step=[100, 150, 170])
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=10,
+    interval=5,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -128,10 +132,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 200
+total_epochs = 180
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2'
+work_dir =  root_dir+'mmdet_models/work_dirs/blaze_body_keypoint1912250000_nokeepratio'
 load_from = None
-resume_from = './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2/latest.pth'
+resume_from = None
 workflow = [('train', 1)]

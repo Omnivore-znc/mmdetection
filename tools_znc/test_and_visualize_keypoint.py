@@ -156,6 +156,7 @@ def runit1(model_config, weights, image_list, out_dir):
             run_num -= 1
 
 if __name__=='__main__':
+# <<<<<<< HEAD
     model_config = '../configs_znc/blaze_body_keypoint_fc3.py'
     model_weight = '../tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip/epoch_200.pth'
     # out_dir = '../tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip/vis_result_savedata'
@@ -165,6 +166,16 @@ if __name__=='__main__':
     # img_dir0 = '/data_point/keypoint_coco2017/save_data20191225'
 
     # img_dir0 = '/opt/space_host/data_xiaozu/person_body'
+# =======
+#     model_config = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/resnet_body_keypoint.py'
+#     model_weight = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/epoch_300.pth'
+#     out_dir = '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/resnet_body_keypoint1912281100/results'
+#
+#     img_dir0 = '/opt/space_host/data_xiaozu/keypoint_coco2017/self-test-set_from_reid'
+#     runit0(model_config, model_weight, img_dir0, out_dir)
+#
+#     img_dir0 = '/opt/space_host/data_xiaozu/person_body'
+# >>>>>>> 92483937b290008f32d8a79d640d4238bd7da3db
     runit0(model_config, model_weight, img_dir0, out_dir)
     #
     # img_list = '/opt/space_host/data_xiaozu/keypoint_coco2017/idx_list-21w_train.txt'
