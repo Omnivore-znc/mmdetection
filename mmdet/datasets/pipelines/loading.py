@@ -24,14 +24,20 @@ class LoadImageFromFile(object):
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-        img = mmcv.imread(filename)
-        if self.to_float32:
-            img = img.astype(np.float32)
-        results['filename'] = filename
-        results['img'] = img
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        return results
+
+        try:
+            img = mmcv.imread(filename)
+            if self.to_float32:
+                img = img.astype(np.float32)
+
+            results['filename'] = filename
+            results['img'] = img
+            results['img_shape'] = img.shape
+            results['ori_shape'] = img.shape
+            return results
+        except:
+            print(filename)
+
 
     def __repr__(self):
         return self.__class__.__name__ + '(to_float32={})'.format(

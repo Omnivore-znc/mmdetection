@@ -9,7 +9,7 @@ model = dict(
     #pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
     pretrained=None,
     backbone=dict(
-        type='BlazeFace',
+        type='BlazeNet',
         input_width=input_width,
         input_height=input_height,
         num_single=5,
@@ -92,7 +92,8 @@ data = dict(
         times=3,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'train_coco_keypoints_aug.txt',
+        ann_file= data_root + 'train_coco_keypoints_ori_aug_all.txt',
+        # ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
@@ -109,7 +110,7 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 #optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer = dict(type='SGD', lr=0.06, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -132,7 +133,7 @@ checkpoint_config = dict(interval=5)
 total_epochs = 300
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './tools/work_dirs/blaze_point/blaze_rotate_crop_flip_erase_lr0.06_fc3'
+work_dir =  './tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3'
 load_from = None
-resume_from = None #'./tools/work_dirs/blaze_point/blaze_rotate_crop_flip_erase_lr0.06_fc3/latest.pth'
+resume_from = './tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/latest.pth'
 workflow = [('train', 1)]

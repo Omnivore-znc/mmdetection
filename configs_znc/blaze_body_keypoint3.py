@@ -8,12 +8,22 @@ model = dict(
     type='PointBoxSingleStageDetector',
     #pretrained= root_dir+'mmdet_models/work_dirs/blaze_body_keypoint/latest.pth',
     pretrained=None,
+    # backbone=dict(
+    #     type='BlazeNet',
+    #     input_width=input_width,
+    #     input_height=input_height,
+    #     num_single=5,
+    #     num_double=6),
     backbone=dict(
-        type='BlazeNet',
+        type='ResNetWH',
+        depth=18,
+        num_stages=4,
+        strides=(2, 2, 2, 2),
+        out_indices=(3,),
+        # frozen_stages=1,
         input_width=input_width,
         input_height=input_height,
-        num_single=5,
-        num_double=6),
+        style='pytorch'),
     neck=None,
     point_head=dict(
         type='KeypointHead',
@@ -32,7 +42,7 @@ train_cfg = dict(
 test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
-data_root = '/data_point/keypoint_coco2017/'
+data_root = '/data_point/keypoint_coco2017/augmentation+test/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=False)
 #img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
 
@@ -57,6 +67,7 @@ train_pipeline = [
 
     dict(type='RandomRotatePoint', pad=(123.675, 116.28, 103.53), max_rotate_degree=20, rotate_ratio=0.5),
     dict(type='RandomCropPoint', crop_size=((input_height, input_width)), min_num_points=3, crop_ratio=0.5),
+    dict(type='RandomErasePointV2', area_ratio_range=(0.01, 0.1), min_aspect_ratio=0.5, max_attempt=30, erase_ratio=0.5),
     dict(type='Resize', img_scale=(input_width, input_height),
          keep_ratio=False,
          center_padded=False),
@@ -88,22 +99,23 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
-        times=2,
+        times=3,
         dataset=dict(
             type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_train.txt',
+        ann_file= data_root + 'train_coco_keypoints_ori_aug_all.txt',
+        # ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
             min_size=8,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
         pipeline=test_pipeline),
     #val=None,
     test=dict(
         type=dataset_type,
-        ann_file= data_root + 'idx_list-21w_val.txt',
+        ann_file= data_root + 'test_coco_keypoints.txt',
         img_prefix=data_root,
         pipeline=test_pipeline))
 # optimizer
@@ -114,9 +126,9 @@ optimizer_config = dict()
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[100, 150, 170])
+    warmup_iters=5000,
+    warmup_ratio=1.0 / 5,
+    step=[150, 200, 230, 250])
 checkpoint_config = dict(interval=5)
 # yapf:disable
 log_config = dict(
@@ -128,10 +140,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 checkpoint_config = dict(interval=5)
-total_epochs = 200
+total_epochs = 300
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2'
+work_dir =  './tools/work_dirs/blaze_point_json/blaze_erase_res18_lossweight_OHEM'
 load_from = None
-resume_from = './tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip_fc2/latest.pth'
+resume_from = None #'./tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/latest.pth'
 workflow = [('train', 1)]

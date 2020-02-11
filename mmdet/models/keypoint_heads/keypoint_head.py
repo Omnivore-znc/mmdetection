@@ -136,9 +136,20 @@ class KeypointHead(nn.Module):
         all_label_weights_tmp = torch.tensor(all_labels)
         all_label_weights_tmp[all_label_weights_tmp > 0] = 1
         all_label_weights_tmp[all_label_weights_tmp < 0] = 0
+
         all_point_weights[all_label_weights_tmp==0,:] = 0
         all_point_weights[all_label_weights_tmp>0, :] = 1
         #all_point_weights =
+
+        # OHKM: lossweight
+        loss_weights = [1, 1, 1, 1, 1,
+                        1, 1, 2, 2,
+                        3, 3, 1, 1,
+                        2, 2, 3, 3]
+        loss_weights_np = np.array(loss_weights).reshape(-1, 1)
+        loss_weights_repeat = np.repeat(loss_weights_np, 2, axis=1)
+        loss_weights_tensor = torch.from_numpy(loss_weights_repeat)
+        all_point_weights *= loss_weights_tensor.cuda()
 
         #num_total_cls = torch.sum(all_label_weights)
         num_total_cls = torch.sum(all_label_weights)/self.num_points*2
@@ -155,6 +166,24 @@ class KeypointHead(nn.Module):
                                                   num_total_cls=num_total_cls,
                                                   num_total_points=num_total_points,
                                                   cfg=cfg)
+
+        # top-k  weight 2
+        loss_point_tensor = torch.tensor(losses_point)
+        loss_point_sort, sort_index = torch.sort(loss_point_tensor, dim=0, descending=True)
+        num_batch = loss_point_tensor.shape[0]
+
+        # OHEM， example weights
+        # batch size = 256
+        index_top_50 = sort_index[0:50]
+        index_top_100 = sort_index[50:100]
+
+        for id in index_top_50:
+            losses_point[id] *= 3
+
+        for id in index_top_100:
+            losses_point[id] *= 2
+
+
         return dict(loss_cls=losses_cls, loss_point=losses_point)
 
     def delta_single(self, point_targets, img_meta,):

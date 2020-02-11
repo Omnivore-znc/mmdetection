@@ -157,13 +157,13 @@ def runit1(model_config, weights, image_list, out_dir):
 
 if __name__=='__main__':
 # <<<<<<< HEAD
-    model_config = '../configs_znc/blaze_body_keypoint_fc3.py'
-    model_weight = '../tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip/epoch_200.pth'
-    # out_dir = '../tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip/vis_result_savedata'
-    out_dir = '../tools/work_dirs/blaze_point/blaze_body_keypoint_rotate_crop_flip/vis_result_reid'
+    model_config = '../configs_znc/blaze_body_keypoint2.py'
+    model_weight = '../tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/epoch_300.pth'
+    out_dir = '../tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/vis_result_savedata'
+    # out_dir = '../tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/vis_result_reid'
 
-    img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
-    # img_dir0 = '/data_point/keypoint_coco2017/save_data20191225'
+    # img_dir0 = '/data_point/keypoint_coco2017/self-test-set_from_reid'
+    img_dir0 = '/data_point/keypoint_coco2017/save_data20191225'
 
     # img_dir0 = '/opt/space_host/data_xiaozu/person_body'
 # =======

@@ -241,9 +241,9 @@ class Resize(object):
         self._resize_masks(results)
         self._resize_points(results)
 
-        ###todo
+        # todo
         # trans_visualize_keypoint(results,
-        #                          '/opt/space_host/zhongnanchang/mmdet_models/work_dirs/tmp_pre')
+        #                          '/jayden/mmdetection_merge/gt_transform_result')
 
         return results
 

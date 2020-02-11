@@ -22,5 +22,5 @@
 #cd ..
 #python setup.py develop
 #chmod 777 ./tools/ -R
-export CUDA_VISIBLE_DEVICES=0,3,4,5
-./tools/dist_train2.sh ./configs_znc/blaze_body_keypoint2.py 4 --validate
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+./tools/dist_train2.sh ./configs_znc/blaze_body_keypoint2.py 8 --validate

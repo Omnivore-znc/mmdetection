@@ -20,7 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     # parser.add_argument('config', help='train config file path')
     parser.add_argument('--config',
-                        default='../configs_znc/blaze_body_keypoint2.py',
+                        default='../configs_znc/blaze_body_keypoint3.py',
                         help='train config file path')
     parser.add_argument('--work_dir',
                         # default='./checkpoint/work_dirs/blaze_body_keypoint/epoch_50.pth',
