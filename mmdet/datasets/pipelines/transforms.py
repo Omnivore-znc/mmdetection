@@ -174,10 +174,13 @@ class Resize(object):
             img, scale_factor = self.imrescale_special(
                 results['img'], results['scale'], return_scale=True)
         else:
-            img, w_scale, h_scale = mmcv.imresize(
-                results['img'], results['scale'], return_scale=True)
-            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                    dtype=np.float32)
+            try:
+                img, w_scale, h_scale = mmcv.imresize(
+                    results['img'], results['scale'], return_scale=True)
+                scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                        dtype=np.float32)
+            except:
+                print(results['img'].shape)
 
         results['img_shape'] = img.shape
         results['img_resize_shape'] = img.shape
@@ -583,6 +586,8 @@ class RandomCropPoint(object):
         self.min_num_points = min_num_points
         self.crop_ratio = crop_ratio
 
+
+
     def __call__(self, results):
 
         if np.random.rand()>self.crop_ratio:
@@ -641,6 +646,175 @@ class RandomCropPoint(object):
         return self.__class__.__name__ + '(crop_size={})'.format(
             self.crop_size)
 
+
+@PIPELINES.register_module
+class RandomHalfBody(object):
+    """Random crop the image & bboxes & masks.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+    """
+
+    def __init__(self, min_num_points, halfbody_ratio, scale_factor, leftRight_or_upperLower=True):
+
+        # define left,right, upper, lower
+        self.upper_body_ids = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        self.lower_body_ids = (11, 12, 13, 14, 15, 16)
+
+        self.left_body_ids = (0, 1, 3, 5, 7, 9, 11, 13, 15)
+        self.right_body_ids = (0, 2, 4, 6, 8, 10, 12 ,14, 16)
+
+        self.num_joints_half_body = min_num_points # 8
+        self.prob_half_body = halfbody_ratio # 0.3
+
+        # self.left_right = True
+        self.scale_factor = scale_factor
+
+    def half_body_transform(self, results):
+
+        joints = results['gt_points']
+        joints_vis = results['gt_labels']
+        img_shape = results['img_shape']
+        aspect_ratio = img_shape[1] * 1.0 / img_shape[0]
+
+        if np.random.randn() < 0.5:
+            half1_ids = self.upper_body_ids
+            half2_ids = self.lower_body_ids
+        else:
+            half1_ids = self.left_body_ids
+            half2_ids = self.right_body_ids
+
+        upper_joints = []
+        lower_joints = []
+        # upper_ids = []
+        # lower_ids = []
+
+        for joint_id in range(joints_vis.shape[0]):
+            if joints_vis[joint_id] > 0:
+                if joint_id in half1_ids:
+                    # upper_ids.append(joint_id)
+                    upper_joints.append(joints[joint_id])
+                elif joint_id in half2_ids:
+                    # lower_ids.append(joint_id)
+                    lower_joints.append(joints[joint_id])
+
+                else:
+                    raise('wrong joint id in half body!! {}'.format(joint_id))
+
+        if np.random.randn() < 0.5 and len(upper_joints) > 3:
+            selected_joints = upper_joints
+        else:
+            selected_joints = lower_joints \
+                if len(lower_joints) > 2 else upper_joints
+
+        if len(selected_joints) < 3:
+            return None, None
+
+        selected_joints = np.array(selected_joints, dtype=np.float32)
+        center = selected_joints.mean(axis=0)[:2]
+
+        left_top = np.amin(selected_joints, axis=0)
+        right_bottom = np.amax(selected_joints, axis=0)
+
+        w = right_bottom[0] - left_top[0]
+        h = right_bottom[1] - left_top[1]
+
+        # if w > aspect_ratio * h:
+        #     h = w * 1.0 / aspect_ratio
+        # elif w < aspect_ratio * h:
+        #     w = h * aspect_ratio
+
+        scale = np.array(
+            [
+                w,
+                h
+            ],
+            dtype=np.float32
+        )
+
+        scale = scale * self.scale_factor
+
+        return center, scale
+
+    def __call__(self, results):
+
+        if np.random.rand()>self.prob_half_body:
+            return results
+
+        img = results['img']
+
+        # 增大crop范围
+        if img.shape[0] <= 36 or img.shape[1] <= 20:
+            return results
+
+        gt_labels = results['gt_labels']
+        invalid_inds = (gt_labels==0)
+        num_invalid = np.sum(invalid_inds)
+
+        if num_invalid > (gt_labels.shape[0] - self.num_joints_half_body):
+            return results
+
+        center, scale = self.half_body_transform(results)
+
+        # otherwise, error
+        # if scale[0] < 40 or scale[1]<64:
+        #     return results
+
+        # crop_size = (min(scale[1], img.shape[0]), min(scale[0], img.shape[1]))
+
+        margin_h = min(center[1] + scale[1] * 1.0 / 2, img.shape[0])
+        margin_w = min(center[0] + scale[0] * 1.0 / 2, img.shape[1])
+        offset_h = max(center[1] - scale[1] * 1.0 / 2, 0)
+        offset_w = max(center[0] - scale[0] * 1.0 / 2, 0)
+
+        # margin_h = max(img.shape[0] - crop_size[0], 0)
+        # margin_w = max(img.shape[1] - crop_size[1], 0) # margin =0, offset=0
+        # offset_h = np.random.randint(0, margin_h + 1)
+        # offset_w = np.random.randint(0, margin_w + 1)
+
+        crop_y1, crop_y2 = offset_h, margin_h
+        crop_x1, crop_x2 = offset_w, margin_w
+
+        # crop_y1, crop_y2 = max(center[1] - scale[1] * 1.0 / 2, 0), min(center[1] + scale[1] * 1.0 / 2, img.shape[0])
+        # crop_x1, crop_x2 = max(center[0] - scale[0] * 1.0 / 2, 0), min(center[0] + scale[0] * 1.0 / 2, img.shape[1])
+
+        # crop the image
+        # if img size<crop size, 保留了原始图像大小
+        img = img[int(crop_y1):int(crop_y2), int(crop_x1):int(crop_x2), :]
+        img_shape = img.shape
+
+        if img.shape[0] <= 36 or img.shape[1] <= 20:
+            return results
+
+        # crop points accordingly and clip to the image boundary
+
+        point_offset = np.array([offset_w, offset_h], dtype=np.float32)
+        points = results['gt_points'] - point_offset
+
+        points[:, 0] = np.clip(points[:, 0], -1, img_shape[1] - 1)
+        points[:, 1] = np.clip(points[:, 1], -1, img_shape[0] - 1)
+
+        invalid_inds = (points[:, 0]==-1) | (points[:, 1]==-1) | \
+                       (points[:, 0]==img_shape[1] - 1) | (points[:, 1]==img_shape[0] - 1)
+
+        # if 'gt_labels' in results:
+        gt_labels = results['gt_labels']
+        gt_labels[invalid_inds] = 0
+
+        results['gt_labels'] = gt_labels
+        results['gt_points'] = points
+
+        results['img'] = img
+        results['img_shape'] = img_shape
+
+        # if np.random.randn() < 0.3:
+        #     trans_visualize_keypoint(results, '/jayden/mmdetection_merge/gt_transform_result')
+
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(crop_size={})'.format(
+            self.crop_size)
 
 @PIPELINES.register_module
 class RandomErasePointV2(object):
