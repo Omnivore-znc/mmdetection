@@ -4,6 +4,7 @@ import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
+import torch.nn.functional as F
 
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
@@ -134,8 +135,8 @@ class HRModule(nn.Module):
                                 padding=0,
                                 bias=False),
                             build_norm_layer(self.norm_cfg, in_channels[i])[1],
-                            nn.Upsample(
-                                scale_factor=2**(j - i), mode='nearest')))
+                            # nn.Upsample(scale_factor=2**(j - i), mode='nearest')
+                        ))
                 elif j == i:
                     fuse_layer.append(None)
                 else:
@@ -173,6 +174,24 @@ class HRModule(nn.Module):
 
         return nn.ModuleList(fuse_layers)
 
+    # def forward(self, x):
+    #     if self.num_branches == 1:
+    #         return [self.branches[0](x[0])]
+    #
+    #     for i in range(self.num_branches):
+    #         x[i] = self.branches[i](x[i])
+    #
+    #     x_fuse = []
+    #     for i in range(len(self.fuse_layers)):
+    #         y = 0
+    #         for j in range(self.num_branches):
+    #             if i == j:
+    #                 y += x[j]
+    #             else:
+    #                 y += self.fuse_layers[i][j](x[j])
+    #         x_fuse.append(self.relu(y))
+    #     return x_fuse
+
     def forward(self, x):
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
@@ -182,13 +201,21 @@ class HRModule(nn.Module):
 
         x_fuse = []
         for i in range(len(self.fuse_layers)):
-            y = 0
-            for j in range(self.num_branches):
+            y = x[0] if i == 0 else self.fuse_layers[i][0](x[0])
+            for j in range(1, self.num_branches):
                 if i == j:
-                    y += x[j]
+                    y = y + x[j]
+                elif j > i:
+                    width_output = x[i].shape[-1]
+                    height_output = x[i].shape[-2]
+                    y = y + F.interpolate(
+                        self.fuse_layers[i][j](x[j]),
+                        size=[int(height_output), int(width_output)],
+                        mode='bilinear')
                 else:
-                    y += self.fuse_layers[i][j](x[j])
+                    y = y + self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))
+
         return x_fuse
 
 

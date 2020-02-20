@@ -9,7 +9,7 @@ model = dict(
     # pretrained= '/share_data/pretrained_models/hrnetv2_w18_imagenet_pretrained.pth',
     # pretrained='open-mmlab://msra/hrnetv2_w18',
     backbone=dict(
-        type='HRNetWH',  #smallV1
+        type='HRNetWH_V2',  #smallV1
         extra=dict(
             stage1=dict(
                 num_modules=1,
@@ -57,7 +57,7 @@ train_cfg = dict(
 test_cfg = dict(score_thr=0.02)
 # dataset settings
 dataset_type = 'BodyKeypointDataset'
-data_root = '/share_data/coco_person_keypoints/augmentation+test/'
+data_root = '/data_point/keypoint_coco2017/augmentation+test/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=False)
 #img_norm_cfg = dict(mean=[0, 0, 0], std=[1, 1, 1], to_rgb=False)
 
@@ -155,11 +155,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 total_epochs = 300
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir =  './tools/work_dirs/blaze_point_json/hrnet_smallV1_halfbody'
+work_dir =  './tools/work_dirs/blaze_point_json/hrnetV2_smallV1_halfbody'
 load_from = None
 resume_from = None #'./tools/work_dirs/blaze_point_json/blaze_rotate_crop_flip_erase_lr0.06_fc3/latest.pth'
 workflow = [('train', 1)]
