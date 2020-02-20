@@ -211,7 +211,7 @@ class HRModule(nn.Module):
                     y = y + F.interpolate(
                         self.fuse_layers[i][j](x[j]),
                         size=[int(height_output), int(width_output)],
-                        mode='bilinear')
+                        mode='nearest') # bilinear
                 else:
                     y = y + self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))
